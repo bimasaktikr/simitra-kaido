@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Filament\Resources\MitraTeladanResource\Pages;
+
+use App\Filament\Resources\MitraTeladanResource;
+use App\Models\Team;
+use App\Services\MitraService;
+use Filament\Resources\Pages\Page;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Select;
+use Illuminate\Support\Collection;
+
+class SelectMitraTeladan extends Page
+{
+    protected static string $resource = MitraTeladanResource::class;
+    protected static string $view = 'filament.resources.mitra-teladan-resource.pages.select-mitra-teladan';
+
+    public int $selectedYear;
+    public int $selectedQuarter;
+
+    public function mount(): void
+    {
+        $this->selectedYear = now()->year;
+        $this->selectedQuarter = ceil(now()->month / 3);
+    }
+
+    public function form(Form $form): Form
+    {
+        return $form->schema([
+            Grid::make(2)->schema([
+                Select::make('selectedYear')
+                    ->label('Year')
+                    ->options(array_combine(
+                        range(now()->year - 5, now()->year),
+                        range(now()->year - 5, now()->year)
+                    ))
+                    ->reactive(),
+
+                Select::make('selectedQuarter')
+                    ->label('Quarter')
+                    ->options([
+                        1 => 'Q1',
+                        2 => 'Q2',
+                        3 => 'Q3',
+                        4 => 'Q4',
+                    ])
+                    ->reactive(),
+            ]),
+        ]);
+    }
+
+    /**
+     * Section 2: Summary Cards
+     */
+    public function getTopMitraCardsProperty(): array
+    {
+        $teams = Team::all();
+        $result = [];
+        $service = app(MitraService::class);
+
+        foreach ($teams as $team) {
+            $data = $service->getTopMitra($this->selectedYear, $this->selectedQuarter, $team->id);
+            $top = $data->first();
+
+            $result[] = [
+                'team_name' => $team->name,
+                'mitra_name' => $top->mitra_name ?? '—',
+                'average_rerata' => $top->average_rerata ?? 0,
+                'distinct_survey_count' => $top->distinct_survey_count ?? 0,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Section 3: Detailed Table of All Top Mitras
+     */
+    public function getTopMitraTableProperty(): Collection
+    {
+        return app(MitraService::class)->getTopMitraAllTeams($this->selectedYear, $this->selectedQuarter);
+    }
+}

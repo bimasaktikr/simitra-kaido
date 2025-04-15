@@ -23,4 +23,22 @@ class Mitra extends Model
     protected $guarded = ['id'];
     // add hidden
     protected $hidden = ['created_at', 'updated_at'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id');
+    }
+
+    public function surveys()
+    {
+        return $this->hasManyThrough(
+            Survey::class,
+            Transaction::class,
+            'mitra_id',    // Foreign key on transactions table...
+            'id',          // Foreign key on surveys table...
+            'id_sobat',    // Local key on mitras table...
+            'survey_id'    // Local key on transactions table...
+        );
+    }
+
 }

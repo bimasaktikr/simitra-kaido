@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\EmployeeResource\Pages;
-use App\Filament\Resources\EmployeeResource\RelationManagers;
-use App\Models\Employee;
+use App\Filament\Resources\MitraTeladanResource\Pages;
+use App\Filament\Resources\MitraTeladanResource\RelationManagers;
+use App\Models\MitraTeladan;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,13 +13,11 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class EmployeeResource extends Resource
+class MitraTeladanResource extends Resource
 {
-    protected static ?string $model = Employee::class;
+    protected static ?string $model = MitraTeladan::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?string $navigationGroup = 'Settings';
-
 
     public static function form(Form $form): Form
     {
@@ -60,9 +58,11 @@ class EmployeeResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListEmployees::route('/'),
-            'create' => Pages\CreateEmployee::route('/create'),
-            'edit' => Pages\EditEmployee::route('/{record}/edit'),
+            'index' => Pages\ListMitraTeladans::route('/'),
+            'create' => Pages\CreateMitraTeladan::route('/create'),
+            'edit' => Pages\EditMitraTeladan::route('/{record}/edit'),
+            // 'index' => Pages\SelectMitraTeladan::route('/'),
+
         ];
     }
 }

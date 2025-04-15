@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\EmployeeResource\Pages;
-use App\Filament\Resources\EmployeeResource\RelationManagers;
-use App\Models\Employee;
+use App\Filament\Resources\Nilai2Resource\Pages;
+use App\Filament\Resources\Nilai2Resource\RelationManagers;
+use App\Models\Nilai2;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,13 +13,11 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class EmployeeResource extends Resource
+class Nilai2Resource extends Resource
 {
-    protected static ?string $model = Employee::class;
+    protected static ?string $model = Nilai2::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?string $navigationGroup = 'Settings';
-
 
     public static function form(Form $form): Form
     {
@@ -60,9 +58,9 @@ class EmployeeResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListEmployees::route('/'),
-            'create' => Pages\CreateEmployee::route('/create'),
-            'edit' => Pages\EditEmployee::route('/{record}/edit'),
+            'index' => Pages\ListNilai2s::route('/'),
+            'create' => Pages\CreateNilai2::route('/create'),
+            'edit' => Pages\EditNilai2::route('/{record}/edit'),
         ];
     }
 }
