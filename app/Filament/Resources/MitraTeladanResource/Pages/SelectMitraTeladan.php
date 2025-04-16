@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\MitraTeladanResource\Pages;
 
 use App\Filament\Resources\MitraTeladanResource;
+use App\Models\Mitra;
 use App\Models\MitraTeladan;
 use App\Models\Team;
 use App\Services\MitraService;
@@ -23,11 +24,15 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 
 class SelectMitraTeladan extends Page
-{
+// class SelectMitraTeladan extends Page implements HasTable
+{   
     // use InteractsWithTable;
 
     protected static string $resource = MitraTeladanResource::class;
     protected static string $view = 'filament.resources.mitra-teladan-resource.pages.select-mitra-teladan';
+
+    public $isConfirmModalOpen = false;
+    public array|null $confirmingMitra = null;
 
     public int $selectedYear;
     public int $selectedQuarter;
@@ -131,40 +136,24 @@ class SelectMitraTeladan extends Page
         // logger(['tableData' => $this->tableData]); // <- Tambahkan log ini
     }
 
-    public function getTableRecords(): Collection
+    public function confirmMitra($mitraId)
     {
-        return collect($this->tableData);
+        // Find the Mitra by mitra_id
+        $mitra = Mitra::find($mitraId);
+
+        // Set the data for confirming the Mitra
+        $this->confirmingMitra = $mitra->toArray();
+        $this->isConfirmModalOpen = true;  // Show the modal
+
+        logger('Mitra confirmed:', $this->confirmingMitra);
+        // Removed dispatchBrowserEvent as it is not available in this class
     }
 
-    public function table(Table $table): Table
+    public function acceptMitraTeladan(): void
     {
-        return $table
-            ->columns([
-                TextColumn::make('mitra_name')->label('Nama Mitra'),
-                TextColumn::make('team_id')->label('Team'),
-                TextColumn::make('avg_rating')->label('Nilai 1')->numeric(2),
-                TextColumn::make('surveys_count')->label('Jumlah Survey'),
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn ($state) => $state === 'final' ? 'success' : 'gray'),
-            ])
-            ->actions([
-                Action::make('accept')
-                    ->label('Pilih')
-                    ->icon('heroicon-m-check')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->visible(fn ($record) => $record['status'] !== 'final') // only show if not already accepted
-                    ->modalHeading('Konfirmasi Pilihan Mitra')
-                    ->modalSubheading(fn ($record) => "Yakin memilih {$record['mitra_name']} sebagai Mitra Teladan?")
-                    ->action(fn ($record) => $this->acceptMitraTeladan($record)),
-            ])
-            ->paginated(false);
-    }
+        $record = $this->confirmingMitra;
+        logger('Mitra confirmed:', $record);
 
-    public function acceptMitraTeladan(array $record): void
-    {
-        // Check if already selected (optional)
         $exists = MitraTeladan::where([
             'mitra_id' => $record['mitra_id'],
             'year' => $this->selectedYear,
@@ -182,22 +171,14 @@ class SelectMitraTeladan extends Page
             ]);
         }
 
+        $this->confirmingMitra = null;
+        // $this->loadData();
+        $this->isConfirmModalOpen = false;  // Show the modal
+
+
         Notification::make()
             ->title("Berhasil memilih {$record['mitra_name']}")
             ->success()
             ->send();
-
-        $this->loadData(); // Refresh the table data
     }
-
-
-    public function render()
-    {
-        return view('livewire.select-mitra-teladan');
-    }
-//     public function query()
-//     {
-//         return MitraTeladan::query()->whereNull('id'); // dummy for Filament interface
-//     }
-
 }

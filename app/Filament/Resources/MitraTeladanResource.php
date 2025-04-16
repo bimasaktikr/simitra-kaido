@@ -58,10 +58,10 @@ class MitraTeladanResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMitraTeladans::route('/'),
+            // 'index' => Pages\ListMitraTeladans::route('/'),
+            'index' => Pages\SelectMitraTeladan::route('/'),
             'create' => Pages\CreateMitraTeladan::route('/create'),
             'edit' => Pages\EditMitraTeladan::route('/{record}/edit'),
-            // 'index' => Pages\SelectMitraTeladan::route('/'),
 
         ];
     }
