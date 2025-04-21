@@ -1,4 +1,6 @@
 <x-filament::page>
+    
+
     {{ $this->form }}
 
     <x-filament::section
@@ -46,7 +48,7 @@
                                 <td>{{ $item['surveys_count'] }}</td>
                                 <td>
                                     <x-filament::button
-                                        @click="openModal({{ json_encode($item) }})"
+                                        wire:click="confirmMitra({{ $item['mitra_id'] }})"
                                         color="primary"
                                     >
                                         Accept
@@ -57,29 +59,104 @@
                     </tbody>
                 </table>
             </div>
+        
 
-            <template x-if="isConfirmModalOpen">
-                <x-filament::modal
-                    id="confirm-mitra-modal"
-                    width="2xl"
-                    slide-over
-                    :heading="'Konfirmasi Mitra Teladan'"
-                    x-on:close="closeModal()"
+            <div 
+                x-data="modalHandler('confirm-mitra-modal')" 
+                x-init="init()" 
+                x-on:open-modal.window="checkAndOpen($event)" 
+                x-on:close-modal.window="checkAndClose($event)" 
+                x-show="isOpen" 
+                x-trap.noscroll="isOpen" 
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                x-transition
+                style="display: none;"
+            >
+                <div 
+                    class="w-full max-w-lg p-6 bg-white rounded-lg shadow-lg dark:bg-gray-800" 
+                    @click.outside="close()"
+                    x-transition
                 >
-                    <div class="space-y-4">
-                        <p>Apakah kamu yakin ingin memilih <strong x-text="confirmingMitra?.mitra_name"></strong> sebagai Mitra Teladan?</p>
-                        <ul class="text-sm">
-                            <li>Rerata Nilai 1: <span x-text="confirmingMitra?.avg_rating ?? '-'"></span></li>
-                            <li>Jumlah Survey: <span x-text="confirmingMitra?.surveys_count ?? '-'"></span></li>
-                            <li>Team ID: <span x-text="confirmingMitra?.team_id ?? '-'"></span></li>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">Konfirmasi Mitra Teladan</h2>
+                        <button @click="close()" class="text-gray-500 hover:text-gray-700">
+                            &times;
+                        </button>
+                    </div>
+
+                    <div class="text-sm text-gray-700 dark:text-gray-200">
+                        <p>Apakah kamu yakin ingin memilih <strong x-text="namaMitra"></strong> sebagai Mitra Teladan?</p>
+                        <ul class="mt-2">
+                            <li>Rerata Nilai 1: <span x-text="nilai"></span></li>
+                            <li>Jumlah Survey: <span x-text="jumlah"></span></li>
+                            <li>Team ID: <span x-text="teamId"></span></li>
                         </ul>
                     </div>
+
                     <div class="flex justify-end mt-6 space-x-2">
-                        <x-filament::button color="secondary" @click="closeModal()">Batal</x-filament::button>
-                        <x-filament::button color="primary" @click="acceptMitra()">Terima</x-filament::button>
+                        <button @click="close()" class="px-4 py-2 text-sm bg-gray-300 rounded hover:bg-gray-400">
+                            Batal
+                        </button>
+                        <button @click="accept()" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700">
+                            Terima
+                        </button>
                     </div>
-                </x-filament::modal>
-            </template>
-        </div>
+                </div>
+            </div>
+
+
+
     </x-filament::section>
+
+    <div>
+        <p>Mitra: {{ $confirmingMitra['mitra_name'] ?? 'None' }}</p>
+        <div>
+            <p class="text-sm text-gray-500">Modal Open: {{ $isConfirmModalOpen ? 'YES' : 'NO' }}</p>
+        </div>
+    </div>
+    <script>
+        function modalHandler(modalId) {
+            return {
+                isOpen: false,
+                namaMitra: '-',
+                nilai: '-',
+                jumlah: '-',
+                teamId: '-',
+        
+                init() {
+                    // Opsional: auto-init logika tambahan
+                },
+        
+                open(detail = {}) {
+                    this.namaMitra = detail.nama ?? '-'
+                    this.nilai = detail.nilai ?? '-'
+                    this.jumlah = detail.jumlah ?? '-'
+                    this.teamId = detail.team_id ?? '-'
+                    this.isOpen = true
+                },
+        
+                close() {
+                    this.isOpen = false
+                },
+        
+                accept() {
+                    // Kirim Livewire event atau apapun logic yang kamu butuh
+                    window.livewire.emit('acceptMitraTeladan') 
+                    this.close()
+                },
+        
+                checkAndOpen(e) {
+                    if (e.detail.id === modalId) {
+                        this.open(e.detail)
+                    }
+                },
+        
+                checkAndClose(e) {
+                    if (e.detail.id === modalId) {
+                        this.close()
+                    }
+                }
+            }
+        }
+        </script>
 </x-filament::page>

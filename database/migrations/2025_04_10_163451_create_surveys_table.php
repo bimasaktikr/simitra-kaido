@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 
             $table->string('name', 50);
-            $table->string('code', 50)->unique(); // assuming survey code is unique
+            $table->string('code', 50); // assuming survey code is unique
             $table->foreignId('payment_id')->constrained()->onDelete('cascade');
             $table->foreignId('team_id')->constrained()->onDelete('cascade');
 

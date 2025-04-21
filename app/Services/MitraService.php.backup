@@ -11,33 +11,32 @@ use App\Models\Nilai1;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use DateTime;
+use Illuminate\Support\Facades\Log;
 
 class MitraService
 {
     public function getTopMitra(int $year, int $quarter, int $teamId)
     {
-        // $teamId = 6;
         [$start, $end] = $this->getQuarterRange($year, $quarter);
 
+        // Fetch mitra summary using Eloquent
         $summary = $this->getMitraSummary($start, $end, $teamId);
         logger('[getMitraSummary Params]', [
             'start' => $start,
             'end' => $end,
             'teamId' => $teamId,
         ]);
-        // dd($summary->get());
 
+        // Rank mitra
         $ranked = $this->rankMitra($summary);
-        // dd($ranked->toSql());
+        // Log::rankMitra($summary);
 
-        $final =  $this->getFinalResult($ranked);
-
-        $finalColletion = collect($final);
-        // dd($final->get());
+        // Final results
+        $final = $this->getFinalResult($ranked);
         // dd($final);
-        return $finalColletion;
-
+        return collect($final);  // Return as Collection
     }
+
 
     public function getQuarterRange(int $year, int $quarter): array
     {
@@ -49,27 +48,25 @@ class MitraService
 
     protected function getMitraSummary($start, $end, $teamId)
     {
-        return DB::table('transactions as t')
-            ->join('surveys as s', 't.survey_id', '=', 's.id')
-            ->join('nilai1s as n', 't.id', '=', 'n.transaction_id')
+        return Transaction::query()  // Use Query Builder instead of Eloquent Builder
+            ->join('surveys as s', 'transactions.survey_id', '=', 's.id')
+            ->join('nilai1s as n', 'transactions.id', '=', 'n.transaction_id')
             ->whereBetween('s.end_date', [$start, $end])
             ->where('s.team_id', $teamId)
-            ->groupBy('t.mitra_id', 's.team_id')
+            ->groupBy('transactions.mitra_id', 's.team_id')
             ->select(
-                't.mitra_id',
+                'transactions.mitra_id',
                 's.team_id',
                 DB::raw('COUNT(DISTINCT s.id) as surveys_count'),
                 DB::raw('AVG(n.rerata) as avg_rating')
-            );
-
-        // dd($summary->get()); // 👈 lihat data real
-
+            )
+            ->toBase();  // Convert to Query Builder
     }
 
     protected function rankMitra($summaryQuery)
     {
         return DB::table(DB::raw("({$summaryQuery->toSql()}) as summary"))
-            ->mergeBindings($summaryQuery)
+            ->mergeBindings($summaryQuery)  // This now works because it's a Query Builder
             ->select(
                 'summary.mitra_id',
                 'summary.team_id',
@@ -81,20 +78,24 @@ class MitraService
 
     protected function getFinalResult($rankedQuery)
     {
-        return DB::table(DB::raw("({$rankedQuery->toSql()}) as ranked"))
-            ->mergeBindings($rankedQuery)
-            ->join('mitras as m', 'ranked.mitra_id', '=', 'm.id')
-            ->where('ranked.rnk', 1)
-            ->select(
-                'm.name as mitra_name',
-                'm.sobat_id as mitra_id',
-                'ranked.team_id',
-                'ranked.avg_rating',
-                'ranked.surveys_count',
-                'ranked.rnk'
-            )
-            ->get();
+        // Instead of using DB::table, use Eloquent's query builder
+        return Mitra::joinSub($rankedQuery, 'ranked', function ($join) {
+            $join->on('ranked.mitra_id', '=', 'mitras.id');
+        })
+        ->where('ranked.rnk', 1)
+        ->select(
+            'mitras.id as mitra_id',
+            'mitras.name as mitra_name',
+            'mitras.sobat_id as sobat_id',
+            'ranked.team_id',
+            'ranked.avg_rating',
+            'ranked.surveys_count',
+            'ranked.rnk'
+        )
+        ->get();  // This will return Eloquent models, not stdClass
     }
+
+
 
     public function getWinnerTeam(int $year, int $quarter)
     {

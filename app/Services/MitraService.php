@@ -48,54 +48,39 @@ class MitraService
 
     protected function getMitraSummary($start, $end, $teamId)
     {
-        return Transaction::query()  // Use Query Builder instead of Eloquent Builder
+        // return Transaction::with(['survey', 'nilai'])
+        //     ->whereHas('survey', function ($query) use ($start, $end, $teamId) {
+        //         $query->whereBetween('end_date', [$start, $end])
+        //             ->where('team_id', $teamId);
+        //     })
+        //     ->select('mitra_id')
+        //     ->selectRaw('COUNT(DISTINCT survey_id) as surveys_count')
+        //     ->selectRaw('AVG(nilai.rerata) as avg_rating')
+        //     ->groupBy('mitra_id')
+        //     ->get();
+
+        return Transaction::query()
             ->join('surveys as s', 'transactions.survey_id', '=', 's.id')
             ->join('nilai1s as n', 'transactions.id', '=', 'n.transaction_id')
             ->whereBetween('s.end_date', [$start, $end])
             ->where('s.team_id', $teamId)
-            ->groupBy('transactions.mitra_id', 's.team_id')
-            ->select(
-                'transactions.mitra_id',
-                's.team_id',
-                DB::raw('COUNT(DISTINCT s.id) as surveys_count'),
-                DB::raw('AVG(n.rerata) as avg_rating')
-            )
-            ->toBase();  // Convert to Query Builder
+            ->select('transactions.mitra_id')
+            ->selectRaw('COUNT(DISTINCT s.id) as surveys_count')
+            ->selectRaw('AVG(n.rerata) as avg_rating')
+            ->groupBy('transactions.mitra_id')
+            ->get();
     }
 
-    protected function rankMitra($summaryQuery)
+    protected function rankMitra($summary)
     {
-        return DB::table(DB::raw("({$summaryQuery->toSql()}) as summary"))
-            ->mergeBindings($summaryQuery)  // This now works because it's a Query Builder
-            ->select(
-                'summary.mitra_id',
-                'summary.team_id',
-                'summary.surveys_count',
-                'summary.avg_rating',
-                DB::raw('RANK() OVER (PARTITION BY summary.team_id ORDER BY summary.avg_rating DESC, summary.surveys_count DESC) as rnk')
-            );
+        return $summary->sortByDesc('avg_rating')->sortByDesc('surveys_count')->values();
     }
 
-    protected function getFinalResult($rankedQuery)
+    protected function getFinalResult($ranked)
     {
-        // Instead of using DB::table, use Eloquent's query builder
-        return Mitra::joinSub($rankedQuery, 'ranked', function ($join) {
-            $join->on('ranked.mitra_id', '=', 'mitras.id');
-        })
-        ->where('ranked.rnk', 1)
-        ->select(
-            'mitras.id as mitra_id',
-            'mitras.name as mitra_name',
-            'mitras.sobat_id as sobat_id',
-            'ranked.team_id',
-            'ranked.avg_rating',
-            'ranked.surveys_count',
-            'ranked.rnk'
-        )
-        ->get();  // This will return Eloquent models, not stdClass
+        $topMitra = $ranked->where('avg_rating', $ranked->first()->avg_rating);
+        return Mitra::whereIn('id', $topMitra->pluck('mitra_id'))->get();
     }
-
-
 
     public function getWinnerTeam(int $year, int $quarter)
     {

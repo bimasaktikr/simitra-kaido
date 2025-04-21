@@ -54,8 +54,7 @@ class SurveyResource extends Resource
             TextInput::make('code')
                 ->label('Survey Code')
                 ->required()
-                ->maxLength(50)
-                ->unique(ignoreRecord: true),
+                ->maxLength(50),
 
             Select::make('payment_id')
                 ->label('Payment Type')
@@ -145,7 +144,11 @@ class SurveyResource extends Resource
                     // })
                     ->sortable(),
             ])
-            ->defaultSort('start_date', 'desc')
+            ->defaultSort(function (Builder $query): Builder {
+                return $query
+                    ->orderBy('is_scored')
+                    ->orderBy('end_date', 'desc');
+            })
             ->filters([
                 //
             ])

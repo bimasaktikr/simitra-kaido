@@ -6,9 +6,12 @@ use App\Filament\Resources\TeamResource\Pages;
 use App\Filament\Resources\TeamResource\RelationManagers;
 use App\Models\Team;
 use Filament\Forms;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -25,7 +28,12 @@ class TeamResource extends Resource
     {
         return $form
             ->schema([
-                //
+                TextInput::make('name'),
+                Toggle::make('has_survey')
+                    ->label('Has Survey')
+                    ->default(false)
+                    ->inline(false)
+                    ->required(),
             ]);
     }
 
@@ -33,7 +41,10 @@ class TeamResource extends Resource
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('name'),
+                TextColumn::make('has_survey')
+                    ->label('Has Survey')
+                    ->formatStateUsing(fn ($state) => $state ? '✔️' : '❌'),
             ])
             ->filters([
                 //
