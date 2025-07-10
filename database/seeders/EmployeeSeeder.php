@@ -23,7 +23,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Ir. Dwi Handayani Prasetyawati M.AP',
                 'email' => 'dwi@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '196810281994012001',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1968-10-28',
@@ -32,7 +32,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Ir. Wahyu Furqandari M.M',
                 'email' => 'wahyu@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '196901181994012001',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1969-01-18',
@@ -41,7 +41,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Tasmilah SST, M.E',
                 'email' => 'tasmilah@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '198309102006022001',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1983-09-10',
@@ -50,7 +50,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Ir. Agustina Martha M.M',
                 'email' => 'agustina@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '196808231994012001',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1968-08-23',
@@ -59,7 +59,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Ahmad Junaedi S.Si, M.M',
                 'email' => 'junaedi@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '197501311994011001',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1975-01-31',
@@ -68,7 +68,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Anggi Fatwa Mauliza A.Md.Kb.N',
                 'email' => 'anggi@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '200006272022012005',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '2000-06-27',
@@ -77,7 +77,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Arini Ismiati S.ST',
                 'email' => 'arini@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '197912202003122006',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1979-12-20',
@@ -86,7 +86,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Baqtiar Arifin S.Stat., MM',
                 'email' => 'baqtiar@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '197806272005021002',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1978-06-27',
@@ -95,7 +95,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Bima Sakti Krisdianto SST',
                 'email' => 'bima@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '199511062017011001',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1995-11-06',
@@ -104,7 +104,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Eka Arifianto A.Md. Lib',
                 'email' => 'eka@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '199709202023211005',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1997-09-20',
@@ -113,7 +113,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Erlisa Cantika Herawati S.Si',
                 'email' => 'erlisa@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '199408052019032003',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1994-08-05',
@@ -122,7 +122,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Ir. Ernawaty M.M',
                 'email' => 'ernawaty@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '196701091992032001',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1967-01-09',
@@ -131,7 +131,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Heru Kartiko SST',
                 'email' => 'heru@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '197604211999031003',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1976-04-21',
@@ -140,7 +140,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Rachmad Widi Wijayanto',
                 'email' => 'rachmad@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '197704042006041016',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1977-04-04',
@@ -149,7 +149,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Ratri Adhipradani Ratih S.Si',
                 'email' => 'ratri@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '198510022009022012',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1985-10-02',
@@ -158,7 +158,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Rendra Anandhika A.Md',
                 'email' => 'rendra@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '198802292011011005',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1988-02-29',
@@ -167,7 +167,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Rhyke Chrisdiana Novita S.E',
                 'email' => 'rhyke@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '198404122005022001',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1984-04-12',
@@ -176,7 +176,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Rizky Maulidya SST, M.AP',
                 'email' => 'maulidya@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '199109302014102001',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1991-09-30',
@@ -185,7 +185,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Saras Wati Utami S.Si, M.E',
                 'email' => 'saras@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '198803302010122002',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1988-03-30',
@@ -194,7 +194,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Saruni Gincahyo SE',
                 'email' => 'saruni@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '196802281989031003',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1968-02-28',
@@ -203,7 +203,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Satria Candra Wibawa A.Md',
                 'email' => 'satria@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '198810282011011004',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1988-10-28',
@@ -212,7 +212,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Siti Barokatun Solihah SST',
                 'email' => 'siti@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '199110232016022001',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1999-11-02',
@@ -221,7 +221,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Soekesi Irawati S.Psi., M.M',
                 'email' => 'soekesi@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '197009251994012001',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1970-09-25',
@@ -230,7 +230,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Windi Wijayanti S.Si, M.E',
                 'email' => 'windi@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '198712182011012022',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1987-12-18',
@@ -239,7 +239,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Yenita Mirawanti SST., M.Si',
                 'email' => 'yenita@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '197806032000122002',
                 'jenis_kelamin' => 'Perempuan',
                 'tanggal_lahir' => '1978-06-03',
@@ -248,7 +248,7 @@ class EmployeeSeeder extends Seeder
             [
                 'name' => 'Yusuf Fatoni SE',
                 'email' => 'yusuf@bps.go.id',
-                'password' => 'bpsmalang',
+                'password' => 'bps3573',
                 'nip' => '197012251997031004',
                 'jenis_kelamin' => 'Laki-Laki',
                 'tanggal_lahir' => '1970-12-25',
