@@ -10,9 +10,10 @@
             <x-filament::card>
                 <div class="space-y-1">
                     <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                        {{ $record->name }}
+                        {{ $record->masterSurvey?->name ?? '-' }}
                     </h2>
-                    <p class="text-sm text-gray-500">Code: <span class="font-medium text-gray-700">{{ $record->code }}</span></p>
+                    <p class="text-sm text-gray-500">Kode: <span class="font-medium text-gray-700">{{ $record->masterSurvey?->code ?? '-' }}</span></p>
+                    <p class="text-sm text-gray-500">Triwulan: <span class="font-medium">{{ $record->triwulan ? 'Q' . $record->triwulan : '-' }}</span></p>
                     <p class="text-sm text-gray-500">Team: <span class="font-medium">{{ $record->team->name }}</span></p>
                     <p class="text-sm text-gray-500">Payment Type: <span class="font-medium">{{ ucfirst($record->payment->payment_type) }}</span></p>
                     <p class="text-sm text-gray-500">Status:
@@ -24,11 +25,6 @@
                                 default => 'bg-gray-100 text-gray-600'
                             } }}">
                             {{ ucfirst($record->status) }}
-                        </span>
-                    </p>
-                    <p class="text-sm text-gray-500">Date:
-                        <span class="font-medium">
-                            {{ $record->start_date->format('d M Y') }} - {{ $record->end_date->format('d M Y') }}
                         </span>
                     </p>
                     <p class="text-sm text-gray-500">Rate:

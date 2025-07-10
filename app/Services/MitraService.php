@@ -17,26 +17,25 @@ class MitraService
 {
     public function getTopMitra(int $year, int $quarter, int $teamId)
     {
-        [$start, $end] = $this->getQuarterRange($year, $quarter);
-
         // Fetch mitra summary using Eloquent
-        $summary = $this->getMitraSummary($start, $end, $teamId);
+        $summary = $this->getMitraSummary($quarter, $year, $teamId);
         logger('[getMitraSummary Params]', [
-            'start' => $start,
-            'end' => $end,
+            'quarter' => $quarter,
+            'year' => $year,
             'teamId' => $teamId,
         ]);
+        logger('[getMitraSummary Result]', $summary->toArray());
 
         // Rank mitra
         $ranked = $this->rankMitra($summary);
-        // Log::rankMitra($summary);
+        logger('[rankMitra Result]', $ranked->toArray());
 
         // Final results
         $final = $this->getFinalResult($ranked);
+        logger('[getFinalResult Result]', $final->toArray());
         // dd($final);
         return collect($final);  // Return as Collection
     }
-
 
     public function getQuarterRange(int $year, int $quarter): array
     {
@@ -46,29 +45,24 @@ class MitraService
         ];
     }
 
-    protected function getMitraSummary($start, $end, $teamId)
+    protected function getMitraSummary($quarter, $year, $teamId)
     {
-        // return Transaction::with(['survey', 'nilai'])
-        //     ->whereHas('survey', function ($query) use ($start, $end, $teamId) {
-        //         $query->whereBetween('end_date', [$start, $end])
-        //             ->where('team_id', $teamId);
-        //     })
-        //     ->select('mitra_id')
-        //     ->selectRaw('COUNT(DISTINCT survey_id) as surveys_count')
-        //     ->selectRaw('AVG(nilai.rerata) as avg_rating')
-        //     ->groupBy('mitra_id')
-        //     ->get();
-
-        return Transaction::query()
+        $query = Transaction::query()
             ->join('surveys as s', 'transactions.survey_id', '=', 's.id')
             ->join('nilai1s as n', 'transactions.id', '=', 'n.transaction_id')
-            ->whereBetween('s.end_date', [$start, $end])
+            ->where('s.triwulan', $quarter)
+            ->where('s.year', $year)
             ->where('s.team_id', $teamId)
             ->select('transactions.mitra_id')
             ->selectRaw('COUNT(DISTINCT s.id) as surveys_count')
             ->selectRaw('AVG(n.rerata) as avg_rating')
-            ->groupBy('transactions.mitra_id')
-            ->get();
+            ->selectRaw('AVG(transactions.rate) as avg_rate')
+            ->groupBy('transactions.mitra_id');
+
+        logger('Mitra Summary SQL:', [$query->toSql(), $query->getBindings()]);
+        $result = $query->get();
+        logger('Mitra Summary Result:', $result->toArray());
+        return $result;
     }
 
     protected function rankMitra($summary)
@@ -78,8 +72,16 @@ class MitraService
 
     protected function getFinalResult($ranked)
     {
-        $topMitra = $ranked->where('avg_rating', $ranked->first()->avg_rating);
-        return Mitra::whereIn('id', $topMitra->pluck('mitra_id'))->get();
+        if ($ranked->isEmpty()) {
+            return collect();
+        }
+        $topAvg = $ranked->first()->avg_rating;
+        $topByRating = $ranked->where('avg_rating', $topAvg);
+        if ($topByRating->count() > 1) {
+            $maxSurveys = $topByRating->max('surveys_count');
+            return $topByRating->where('surveys_count', $maxSurveys);
+        }
+        return $topByRating;
     }
 
     public function getWinnerTeam(int $year, int $quarter)

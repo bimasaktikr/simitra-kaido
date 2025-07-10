@@ -26,7 +26,7 @@ class SurveyResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'Ketua Tim';
+    protected static ?string $navigationGroup = 'Surveys';
 
 
     public static function getPermissionPrefixes(): array
@@ -46,79 +46,99 @@ class SurveyResource extends Resource
     {
         return $form
             ->schema([
-            TextInput::make('name')
-                ->label('Survey Name')
-                ->required()
-                ->maxLength(50),
-
-            TextInput::make('code')
-                ->label('Survey Code')
-                ->required()
-                ->maxLength(50),
-
-            Select::make('payment_id')
-                ->label('Payment Type')
-                ->relationship('payment', 'payment_type') // assuming relation exists
-                // ->searchable()
-                ->required(),
-
-            Select::make('team_id')
-                ->label('Team')
-                ->relationship('team', 'name')
-                // ->searchable()
-                ->required(),
-
-            DatePicker::make('start_date')
-                ->label('Start Date')
-                ->required(),
-
-            DatePicker::make('end_date')
-                ->label('End Date')
-                ->required(),
-
-            TextInput::make('rate')
-                ->numeric()
-                ->prefix('Rp.')
-                ->label('Rate')
-                ->required(),
-
-            // FileUpload::make('file')
-            //     ->label('Attachment')
-            //     ->directory('survey-files')
-            //     ->maxSize(2048)
-            //     ->preserveFilenames()
-            //     ->nullable(),
-
-            Toggle::make('is_scored')
-                ->label('Scored?')
-                ->disabled(),
-
-            Toggle::make('is_synced')
-                ->label('Synced?')
-                ->disabled(),
-
-            Select::make('status')
-                ->options([
-                    'not started' => 'Not Started',
-                    'in progress' => 'In Progress',
-                    'done' => 'Done',
-                ])
-                ->label('Status')
-                ->required(),
-        ]);
+                Select::make('master_survey_id')
+                    ->label('Master Survey')
+                    ->relationship('masterSurvey', 'name')
+                    ->getOptionLabelFromRecordUsing(fn($record) => $record->name . ' (' . $record->code . ')')
+                    ->searchable()
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nama Survey')
+                            ->required(),
+                        Forms\Components\TextInput::make('code')
+                            ->label('Kode Survey')
+                            ->required(),
+                    ])
+                    ->required(),
+                Select::make('triwulan')
+                    ->label('Triwulan')
+                    ->options([
+                        1 => 'Q1',
+                        2 => 'Q2',
+                        3 => 'Q3',
+                        4 => 'Q4',
+                    ])
+                    ->required(),
+                Select::make('year')
+                    ->label('Year')
+                    ->options(
+                        collect(range(now()->year, 2020))->mapWithKeys(fn($y) => [$y => $y])->toArray()
+                    )
+                    ->required(),
+                Select::make('payment_id')
+                    ->label('Payment Type')
+                    ->relationship('payment', 'payment_type')
+                    ->required(),
+                Select::make('team_id')
+                    ->label('Team')
+                    ->relationship('team', 'name')
+                    ->required(),
+                TextInput::make('rate')
+                    ->numeric()
+                    ->prefix('Rp.')
+                    ->label('Rate')
+                    ->required(),
+                // FileUpload::make('file')
+                //     ->label('Attachment')
+                //     ->directory('survey-files')
+                //     ->maxSize(2048)
+                //     ->preserveFilenames()
+                //     ->nullable(),
+                Toggle::make('is_scored')
+                    ->label('Scored?')
+                    ->disabled(),
+                Toggle::make('is_synced')
+                    ->label('Synced?')
+                    ->disabled(),
+                Select::make('status')
+                    ->options([
+                        'not started' => 'Not Started',
+                        'in progress' => 'In Progress',
+                        'done' => 'Done',
+                    ])
+                    ->label('Status')
+                    ->required(),
+            ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('name')->sortable()->searchable(),
-                TextColumn::make('code')->sortable()->searchable(),
-                TextColumn::make('payment.name')->label('Payment Type')->sortable(),
-                TextColumn::make('team.name')->label('Team')->sortable(),
-                TextColumn::make('start_date')->date()->sortable(),
-                TextColumn::make('end_date')->date()->sortable(),
-                TextColumn::make('rate')->money('IDR', true)->sortable(),
+                TextColumn::make('masterSurvey.name')
+                    ->label('Nama Survey')
+                    ->sortable()
+                    ->searchable(),
+                TextColumn::make('masterSurvey.code')
+                    ->label('Kode Survey')
+                    ->sortable()
+                    ->searchable(),
+                TextColumn::make('triwulan')
+                    ->label('Triwulan')
+                    ->formatStateUsing(fn($state) => $state ? 'Q' . $state : null)
+                    ->sortable(),
+                TextColumn::make('year')
+                    ->label('Year')
+                    ->sortable(),
+                TextColumn::make('payment.name')
+                    ->label('Payment Type')
+                    ->sortable(),
+                TextColumn::make('team.name')
+                    ->label('Team')
+                    ->sortable(),
+                TextColumn::make('rate')
+                    ->money('IDR', true)
+                    ->sortable(),
 
                 IconColumn::make('is_scored')
                     ->label('Scored')
@@ -147,7 +167,7 @@ class SurveyResource extends Resource
             ->defaultSort(function (Builder $query): Builder {
                 return $query
                     ->orderBy('is_scored')
-                    ->orderBy('end_date', 'desc');
+                    ->orderBy('triwulan', 'desc');
             })
             ->filters([
                 //

@@ -12,6 +12,9 @@ class Survey extends Model
     protected $fillable = [
         'name',
         'code',
+        'triwulan',
+        'year',
+        'master_survey_id',
         'payment_id',
         'start_date',
         'end_date',
@@ -51,6 +54,11 @@ class Survey extends Model
             'id',          // PK on surveys
             'mitra_id'     // FK on transactions
         );
+    }
+
+    public function masterSurvey()
+    {
+        return $this->belongsTo(MasterSurvey::class, 'master_survey_id');
     }
 
     // In Survey.php

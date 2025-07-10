@@ -135,12 +135,12 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
             Action::make('Upload Mitra Excel')
                 ->form([
                     FileUpload::make('file')
-                        ->label('Upload Excel File')
-                        ->disk('local')
-                        ->directory('survey-data')
-                        ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'])
-                        ->preserveFilenames()
-                        ->required(),
+                            ->label('Upload Excel File')
+                            ->disk('local')
+                            ->directory('survey-data')
+                            ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'])
+                            ->preserveFilenames()
+                            ->required(),
                         ])
                         ->action(function (array $data) {
 
@@ -181,35 +181,36 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                         ])
                         ->modalSubmitActionLabel('Import'),
                      // ✅ Add this Finalize button
-                     Action::make('toggleFinalizeNilai')
-                        ->label(fn () => $this->record->is_scored ? 'Unfinalize Nilai' : 'Finalize Nilai')
-                        ->icon(fn () => $this->record->is_scored ? 'heroicon-o-lock-open' : 'heroicon-o-lock-closed')
-                        ->color(fn () => $this->record->is_scored ? 'gray' : 'danger')
-                        ->requiresConfirmation()
-                        // ->visible(fn () =>
-                        //     ! $this->record->is_scored || Auth::user()->hasRole('superadmin')
-                        // )
-                        ->visible(fn () => ! $this->record->is_scored || auth()->user()->can('survey.unfinalize'))
-                        ->action(function () {
-                            $survey = $this->record;
 
-                            // Restrict unfinalize unless superadmin
-                            if ($survey->is_scored && ! Auth::user()->hasRole('superadmin')) {
-                                Notification::make()
-                                    ->title('You do not have permission to unfinalize this survey.')
-                                    ->danger()
-                                    ->send();
-                                return;
-                            }
+        Action::make('toggleFinalizeNilai')
+                ->label(fn () => $this->record->is_scored ? 'Unfinalize Nilai' : 'Finalize Nilai')
+                ->icon(fn () => $this->record->is_scored ? 'heroicon-o-lock-open' : 'heroicon-o-lock-closed')
+                ->color(fn () => $this->record->is_scored ? 'gray' : 'danger')
+                ->requiresConfirmation()
+                // ->visible(fn () =>
+                //     ! $this->record->is_scored || Auth::user()->hasRole('superadmin')
+                // )
+                ->visible(fn () => ! $this->record->is_scored || auth()->user()->can('survey.unfinalize'))
+                ->action(function () {
+                    $survey = $this->record;
 
-                            $survey->is_scored = ! $survey->is_scored;
-                            $survey->save();
+                    // Restrict unfinalize unless superadmin
+                    if ($survey->is_scored && ! Auth::user()->hasRole('superadmin')) {
+                        Notification::make()
+                            ->title('You do not have permission to unfinalize this survey.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
 
-                            Notification::make()
-                                ->title($survey->is_scored ? 'Survey finalized!' : 'Finalization cancelled!')
-                                ->success()
-                                ->send();
-                        }),
+                    $survey->is_scored = ! $survey->is_scored;
+                    $survey->save();
+
+                    Notification::make()
+                        ->title($survey->is_scored ? 'Survey finalized!' : 'Finalization cancelled!')
+                        ->success()
+                        ->send();
+                }),
                 ];
 
     }

@@ -12,6 +12,7 @@ use DutchCodingCompany\FilamentSocialite\Provider;
 use Filament\Forms\Components\FileUpload;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -74,8 +75,34 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\FilamentInfoWidget::class,
             ])
             ->navigationGroups([
-                'Ketua Tim',
-                'Settings',
+                NavigationGroup::make('Mitra')
+                    ->label('Mitra')
+                    ->icon('heroicon-o-user-group')
+                    ->collapsed(),
+                NavigationGroup::make('Reports')
+                    ->label('Reports')
+                    ->icon('heroicon-o-user-group')
+                    ->collapsed(),
+                NavigationGroup::make('Surveys')
+                    ->label('Surveys')
+                    ->icon('heroicon-o-pencil-square')
+                    ->collapsed(),
+                NavigationGroup::make('Master Data')
+                    ->label('Master Data')
+                    ->icon('heroicon-o-table-cells')
+                    ->collapsed(),
+                NavigationGroup::make('Settings')
+                    ->label('Settings')
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->collapsed(),
+                NavigationGroup::make('Filament Shield')
+                    ->label('Filament Shield')
+                    ->icon('heroicon-o-shield-check')
+                    ->collapsed(),
+                NavigationGroup::make('User')
+                    ->label('User')
+                    ->icon('heroicon-o-academic-cap')
+                    ->collapsed(),
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -98,7 +125,8 @@ class AdminPanelProvider extends PanelProvider
             ->plugins(
                 $this->getPlugins()
             )
-            ->databaseNotifications();
+            ->databaseNotifications()
+            ;
     }
 
     private function getPlugins(): array

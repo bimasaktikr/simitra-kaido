@@ -23,7 +23,7 @@ class Nilai2Service
     {
         try {
             DB::beginTransaction();
-            
+
             Nilai2::create($data);
 
             DB::commit();
@@ -57,19 +57,26 @@ class Nilai2Service
             })
             ->toArray();
     }
-    
+
     public function checkFinal($id)
     {
         // Find the MitraTeladan by its ID
         $mitraTeladan = MitraTeladan::findOrFail($id);
-    
+
         // Check if all related Nilai2 entries are final
         $allFinal = $mitraTeladan->nilai2->every(function ($nilai2) {
             return $nilai2->is_final;
         });
-    
+
         // Return true if all are final, otherwise false
         return $allFinal;
+    }
+
+    public function userHasNilai2($mitraTeladanId, $userId)
+    {
+        return Nilai2::where('mitra_teladan_id', $mitraTeladanId)
+            ->where('user_id', $userId)
+            ->exists();
     }
 
 }

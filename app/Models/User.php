@@ -70,4 +70,9 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, MustVerif
     {
         return true;
     }
+
+    public function employee()
+    {
+        return $this->hasOne(\App\Models\Employee::class, 'user_id', 'id');
+    }
 }
