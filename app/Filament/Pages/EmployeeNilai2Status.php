@@ -21,6 +21,12 @@ class EmployeeNilai2Status extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
     protected static string $view = 'filament.pages.employee-nilai2-status';
+
+    protected static ?string $title = 'Monitoring Penilaian';
+    protected static ?string $slug = 'monitoring-penilaian';
+    protected static ?string $navigationLabel = 'Monitoring Penilaian';
+
+
     public static bool $shouldRegisterNavigation = true;
 
     public static function getNavigationGroup(): ?string
