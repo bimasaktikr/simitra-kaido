@@ -75,7 +75,11 @@ class SurveyTransactionImport implements ToCollection, WithHeadingRow
                         'jenis_kelamin' => $jenisKelamin,
                         'email' => $row['email'],
                         'pendidikan' => $row['pendidikan'] ?? '-',
-                        'tanggal_lahir' => isset($row['tgl_lahir']) ? Carbon::parse($row['tgl_lahir']) : null,
+                        'tanggal_lahir' => isset($row['tgl_lahir'])
+                            ? (Carbon::hasFormat($row['tgl_lahir'], 'd/m/Y')
+                                ? Carbon::createFromFormat('d/m/Y', $row['tgl_lahir'])
+                                : Carbon::parse($row['tgl_lahir']))
+                            : null,
                         'user_id' => $user->id,
                     ]);
                 }

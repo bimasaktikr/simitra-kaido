@@ -1,7 +1,7 @@
 <x-filament-panels::page>
-    <pre class="p-2 mb-2 text-xs text-gray-400 bg-gray-100 rounded dark:bg-gray-800">$groupedByTeam: @json($groupedByTeam)</pre>
+    {{-- <pre class="p-2 mb-2 text-xs text-gray-400 bg-gray-100 rounded dark:bg-gray-800">$groupedByTeam: @json($groupedByTeam)</pre> --}}
     {{-- Debug output for troubleshooting --}}
-    <pre class="p-2 mb-4 text-xs text-gray-400 bg-gray-100 rounded dark:bg-gray-800">$acceptedMitraTeladan: @json($acceptedMitraTeladan)</pre>
+    {{-- <pre class="p-2 mb-4 text-xs text-gray-400 bg-gray-100 rounded dark:bg-gray-800">$acceptedMitraTeladan: @json($acceptedMitraTeladan)</pre> --}}
     {{-- Top Mitra per Team Horizontal Stack --}}
 
     {{-- Filter Form and Table Section --}}
@@ -33,11 +33,11 @@
                             Nilai
                         </button>
                     @endif
-                    <pre>
+                    {{-- <pre>
 mitra_id: {{ $item['mitra_id'] ?? 'null' }}
 mitra_teladan_id: {{ $item['mitra_teladan_id'] ?? 'null' }}
 user_has_nilai2: {{ $item['user_has_nilai2'] ? 'true' : 'false' }}
-                    </pre>
+                    </pre> --}}
                 </div>
             @endforeach
         </div>
