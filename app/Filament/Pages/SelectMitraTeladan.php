@@ -90,14 +90,31 @@ class SelectMitraTeladan extends Page implements HasForms
         $acceptedMitraIdByTeam = [];
 
         foreach ($teams as $team) {
+            // Get all MitraTeladan for this team and period
+            $mitraTeladans = \App\Models\MitraTeladan::where('team_id', $team->id)
+                ->where('year', $year)
+                ->where('quarter', $quarter)
+                ->get();
+            // Build array of [mitra_teladan_id, mitra_id, nilai2_average]
+            $nilai2Averages = $mitraTeladans->map(function ($mt) use ($nilai2Service) {
+                return [
+                    'mitra_teladan_id' => $mt->id,
+                    'mitra_id' => $mt->mitra_id,
+                    'nilai2_average' => $nilai2Service->getAverageRating($mt->id),
+                ];
+            })->sortByDesc('nilai2_average')->values();
+            // Assign ranking
+            $rankingMap = [];
+            foreach ($nilai2Averages as $idx => $row) {
+                $rankingMap[$row['mitra_teladan_id']] = $idx + 1;
+            }
             $topMitras = $mitraService->getTopMitra($year, $quarter, $team->id) ?? collect();
             if ($topMitras->isEmpty()) {
-                $mitraTeladan = \App\Models\MitraTeladan::where('team_id', $team->id)
-                    ->where('year', $year)
-                    ->where('quarter', $quarter)
-                    ->first();
+                $mitraTeladan = $mitraTeladans->first();
                 if ($mitraTeladan) {
                     $mitra = \App\Models\Mitra::find($mitraTeladan->mitra_id);
+                    $nilai2Average = $nilai2Service->getAverageRating($mitraTeladan->id);
+                    $ranking = isset($rankingMap[$mitraTeladan->id]) ? $rankingMap[$mitraTeladan->id] : null;
                     $accepted[] = [
                         'team_name'     => $team->name,
                         'mitra_name'    => $mitra?->name ?? '-',
@@ -106,6 +123,8 @@ class SelectMitraTeladan extends Page implements HasForms
                         'mitra_id'      => $mitraTeladan->mitra_id ?? null,
                         'mitra_teladan_id' => $mitraTeladan->id ?? null,
                         'user_has_nilai2' => $mitraTeladan ? $nilai2Service->userHasNilai2($mitraTeladan->id, $userId) : false,
+                        'nilai2_average' => $nilai2Average,
+                        'ranking' => $ranking,
                     ];
                     $acceptedMitraIdByTeam[$team->id] = $mitraTeladan->mitra_id;
                 } else {
@@ -117,6 +136,8 @@ class SelectMitraTeladan extends Page implements HasForms
                         'mitra_id'      => null,
                         'mitra_teladan_id' => null,
                         'user_has_nilai2' => false,
+                        'nilai2_average' => null,
+                        'ranking' => null,
                     ];
                     $acceptedMitraIdByTeam[$team->id] = null;
                 }
@@ -132,12 +153,11 @@ class SelectMitraTeladan extends Page implements HasForms
                     'team_name' => $team->name,
                 ];
             }
-            $mitraTeladan = \App\Models\MitraTeladan::where('team_id', $team->id)
-                ->where('year', $year)
-                ->where('quarter', $quarter)
-                ->first();
+            $mitraTeladan = $mitraTeladans->first();
             if ($mitraTeladan) {
                 $mitra = \App\Models\Mitra::find($mitraTeladan->mitra_id);
+                $nilai2Average = $nilai2Service->getAverageRating($mitraTeladan->id);
+                $ranking = isset($rankingMap[$mitraTeladan->id]) ? $rankingMap[$mitraTeladan->id] : null;
                 $accepted[] = [
                     'team_name'     => $team->name,
                     'mitra_name'    => $mitra?->name ?? '-',
@@ -146,6 +166,8 @@ class SelectMitraTeladan extends Page implements HasForms
                     'mitra_id'      => $mitraTeladan->mitra_id ?? null,
                     'mitra_teladan_id' => $mitraTeladan->id ?? null,
                     'user_has_nilai2' => $mitraTeladan ? $nilai2Service->userHasNilai2($mitraTeladan->id, $userId) : false,
+                    'nilai2_average' => $nilai2Average,
+                    'ranking' => $ranking,
                 ];
                 $acceptedMitraIdByTeam[$team->id] = $mitraTeladan->mitra_id;
             } else {
@@ -157,6 +179,8 @@ class SelectMitraTeladan extends Page implements HasForms
                     'mitra_id'      => null,
                     'mitra_teladan_id' => null,
                     'user_has_nilai2' => false,
+                    'nilai2_average' => null,
+                    'ranking' => null,
                 ];
                 $acceptedMitraIdByTeam[$team->id] = null;
             }
@@ -164,6 +188,27 @@ class SelectMitraTeladan extends Page implements HasForms
         $this->groupedByTeam = $grouped;
         $this->acceptedMitraTeladan = $accepted;
         $this->acceptedMitraIdByTeam = $acceptedMitraIdByTeam;
+
+        // Cross-team ranking: dense rank all accepted mitra teladan by nilai2_average
+        $acceptedWithRanking = collect($accepted)
+            ->filter(fn($item) => !is_null($item['mitra_id']))
+            ->sortByDesc(fn($item) => $item['nilai2_average'])
+            ->values();
+        $currentRank = 1;
+        $prevAverage = null;
+        foreach ($acceptedWithRanking as $idx => $item) {
+            if ($prevAverage !== null && $item['nilai2_average'] !== $prevAverage) {
+                $currentRank = $idx + 1;
+            }
+            foreach ($accepted as &$acc) {
+                if ($acc['mitra_teladan_id'] === $item['mitra_teladan_id']) {
+                    $acc['ranking'] = $currentRank;
+                }
+            }
+            $prevAverage = $item['nilai2_average'];
+        }
+        unset($acc);
+        $this->acceptedMitraTeladan = $accepted;
     }
 
 

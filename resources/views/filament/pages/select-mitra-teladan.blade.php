@@ -22,6 +22,8 @@
                     <div class="text-sm">Mitra Teladan: <span class="font-semibold">{{ $item['mitra_name'] }}</span></div>
                     <div class="text-gray-500">Rerata Rating: <span class="font-semibold">{{ is_numeric($item['avg_rating']) ? number_format($item['avg_rating'], 2) : '-' }}</span></div>
                     <div class="text-gray-500">Jumlah Survey: <span class="font-semibold">{{ $item['surveys_count'] }}</span></div>
+                    <div class="text-gray-500">Rerata Nilai 2: <span class="font-semibold">{{ is_numeric($item['nilai2_average']) ? number_format($item['nilai2_average'], 2) : '-' }}</span></div>
+                    <div class="text-gray-500">Peringkat Saat ini: <span class="font-semibold">{{ $item['ranking'] ?? '-' }}</span></div>
                     @if($item['mitra_name'] !== 'Belum ada Mitra Teladan' && !empty($item['mitra_id']))
                         <button
                             x-data

@@ -44,6 +44,11 @@ class TeamSeeder extends Seeder
                 'name' => 'IPDS',
                 'has_survey' => true,
             ],
+            [
+                'id' => 6,
+                'name' => 'IPDS',
+                'has_survey' => true,
+            ],
         ]);
     }
 }
