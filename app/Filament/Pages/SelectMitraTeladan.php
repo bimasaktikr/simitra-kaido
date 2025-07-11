@@ -27,8 +27,10 @@ class SelectMitraTeladan extends Page implements HasForms
 
     protected static string $view = 'filament.pages.select-mitra-teladan';
 
-    protected static ?string $slug = 'select-mitra-teladan';
-    protected static ?string $navigationGroup = 'Mitra';
+    protected static ?string $slug = 'penilaian-mitra-teladan';
+    protected static ?string $navigationGroup = 'Penilaian';
+    protected static ?int $navigationSort = -100;
+    public static ?string $title = 'Penilaian Mitra Teladan';
 
     public static function shouldRegisterNavigation(): bool
     {

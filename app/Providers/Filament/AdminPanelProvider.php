@@ -75,12 +75,13 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\FilamentInfoWidget::class,
             ])
             ->navigationGroups([
-                NavigationGroup::make('Mitra')
-                    ->label('Mitra')
+
+                NavigationGroup::make('Penilaian')
+                    ->label('Penilaian')
                     ->icon('heroicon-o-user-group')
                     ->collapsed(),
-                NavigationGroup::make('Reports')
-                    ->label('Reports')
+                NavigationGroup::make('Mitra')
+                    ->label('Mitra')
                     ->icon('heroicon-o-user-group')
                     ->collapsed(),
                 NavigationGroup::make('Surveys')

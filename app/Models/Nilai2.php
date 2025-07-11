@@ -30,4 +30,14 @@ class Nilai2 extends Model
     protected $guarded = ['id'];
     // add hidden
     protected $hidden = ['created_at', 'updated_at'];
+
+    public function mitraTeladan()
+    {
+        return $this->belongsTo(\App\Models\MitraTeladan::class, 'mitra_teladan_id', 'id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id', 'id');
+    }
 }

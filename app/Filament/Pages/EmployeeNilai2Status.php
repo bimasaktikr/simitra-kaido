@@ -23,7 +23,7 @@ class EmployeeNilai2Status extends Page implements HasTable
     protected static ?string $slug = 'monitoring-penilaian';
     protected static ?string $navigationLabel = 'Monitoring Penilaian';
     public static bool $shouldRegisterNavigation = true;
-    public static function getNavigationGroup(): ?string { return 'Reports'; }
+    public static function getNavigationGroup(): ?string { return 'Penilaian'; }
 
     public function table(Table $table): Table
     {
