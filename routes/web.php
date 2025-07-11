@@ -18,6 +18,8 @@ Route::get('/mitra/template/download', function () {
     }, 'mitra-template.csv');
 })->name('mitra.template.download');
 
+Route::get('/export-nilai2-report', [\App\Http\Controllers\SelectMitraTeladanExportController::class, 'export'])->name('export.nilai2.report');
+
 // Route::middleware(['auth', 'verified']) // Or adjust as needed
 //     ->get('/mitra-teladans', ListMitraTeladan::class)
 //     ->name('mitra-teladan');

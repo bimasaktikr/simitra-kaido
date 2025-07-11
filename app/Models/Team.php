@@ -14,4 +14,9 @@ class Team extends Model
     protected $guarded = ['id'];
     // add hidden
     protected $hidden = ['created_at', 'updated_at'];
+
+    public function employees()
+    {
+        return $this->hasMany(\App\Models\Employee::class, 'team_id');
+    }
 }

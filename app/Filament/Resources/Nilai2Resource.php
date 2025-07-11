@@ -31,6 +31,8 @@ class Nilai2Resource extends Resource
         /** @var \App\Models\User|null $user */
         $user = \Filament\Facades\Filament::auth()?->user();
         return $user && ($user->hasRole('super_admin') || $user->hasRole('Pegawai'));
+
+
     }
 
 

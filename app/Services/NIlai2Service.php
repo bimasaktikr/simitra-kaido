@@ -79,4 +79,60 @@ class Nilai2Service
             ->exists();
     }
 
+    protected static $aspekDescriptions = [
+        1 => 'Adaptif',
+        2 => 'Akuntabel',
+        3 => 'Amanah',
+        4 => 'Disiplin',
+        5 => 'Harmonis',
+        6 => 'Inovatif',
+        7 => 'Kolaboratif',
+        8 => 'Kompeten',
+        9 => 'Loyal',
+        10 => 'Pelayanan',
+    ];
+
+    /**
+     * Get Nilai2 report data for export, grouped by MitraTeladan and Team.
+     */
+    public function getReportData($year = null, $quarter = null)
+    {
+        $query = MitraTeladan::with(['team', 'mitra', 'nilai2.user.employee'])
+            ->when($year, fn($q) => $q->where('year', $year))
+            ->when($quarter, fn($q) => $q->where('quarter', $quarter));
+
+        $mitraTeladans = $query->get();
+
+        $reportData = [];
+        foreach ($mitraTeladans as $mitraTeladan) {
+            $teamName = $mitraTeladan->team?->name ?? '-';
+            $mitraName = $mitraTeladan->mitra?->name ?? '-';
+            $nilai2List = [];
+            foreach ($mitraTeladan->nilai2 as $nilai2) {
+                $employeeName = $nilai2->user?->employee?->name ?? $nilai2->user?->name ?? '-';
+                $nilai2List[] = [
+                    'employeeName' => $employeeName,
+                    'aspek1' => $nilai2->aspek1,
+                    'aspek2' => $nilai2->aspek2,
+                    'aspek3' => $nilai2->aspek3,
+                    'aspek4' => $nilai2->aspek4,
+                    'aspek5' => $nilai2->aspek5,
+                    'aspek6' => $nilai2->aspek6,
+                    'aspek7' => $nilai2->aspek7,
+                    'aspek8' => $nilai2->aspek8,
+                    'aspek9' => $nilai2->aspek9,
+                    'aspek10' => $nilai2->aspek10,
+                ];
+            }
+            $reportData[] = [
+                'mitraName' => $mitraName,
+                'teamName' => $teamName,
+                'nilai2List' => $nilai2List,
+            ];
+        }
+        return [
+            'data' => $reportData,
+            'aspekDescriptions' => self::$aspekDescriptions,
+        ];
+    }
 }

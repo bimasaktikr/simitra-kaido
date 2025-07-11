@@ -18,6 +18,7 @@ use Filament\Forms\Components\Grid;
 use App\Models\MitraTeladan;
 use Filament\Notifications\Notification;
 use App\Services\Nilai2Service;
+use Illuminate\Support\Facades\Log;
 
 class SelectMitraTeladan extends Page implements HasForms
 {
@@ -39,6 +40,7 @@ class SelectMitraTeladan extends Page implements HasForms
 
     protected $listeners = [
         'nilai2Saved' => 'loadTopMitras',
+        'finalizeTeam',
     ];
 
     public array $topMitras = [];
@@ -117,6 +119,13 @@ class SelectMitraTeladan extends Page implements HasForms
                     $mitra = \App\Models\Mitra::find($mitraTeladan->mitra_id);
                     $nilai2Average = $nilai2Service->getAverageRating($mitraTeladan->id);
                     $ranking = isset($rankingMap[$mitraTeladan->id]) ? $rankingMap[$mitraTeladan->id] : null;
+                    $totalPegawai = \App\Models\Employee::count();
+                    $pegawaiSudahInput = 0;
+                    if ($mitraTeladan) {
+                        $pegawaiSudahInput = \App\Models\Nilai2::where('mitra_teladan_id', $mitraTeladan->id)->distinct('user_id')->count('user_id');
+                    }
+                    $isFinalizable = $totalPegawai > 0 && $pegawaiSudahInput === $totalPegawai;
+                    $isFinalized = $mitraTeladan && $mitraTeladan->status_phase_2;
                     $accepted[] = [
                         'team_name'     => $team->name,
                         'mitra_name'    => $mitra?->name ?? '-',
@@ -127,6 +136,10 @@ class SelectMitraTeladan extends Page implements HasForms
                         'user_has_nilai2' => $mitraTeladan ? $nilai2Service->userHasNilai2($mitraTeladan->id, $userId) : false,
                         'nilai2_average' => $nilai2Average,
                         'ranking' => $ranking,
+                        'total_pegawai' => $totalPegawai,
+                        'pegawai_sudah_input' => $pegawaiSudahInput,
+                        'is_finalizable' => $isFinalizable,
+                        'is_finalized' => $isFinalized,
                     ];
                     $acceptedMitraIdByTeam[$team->id] = $mitraTeladan->mitra_id;
                 } else {
@@ -140,6 +153,10 @@ class SelectMitraTeladan extends Page implements HasForms
                         'user_has_nilai2' => false,
                         'nilai2_average' => null,
                         'ranking' => null,
+                        'total_pegawai' => 0,
+                        'pegawai_sudah_input' => 0,
+                        'is_finalizable' => false,
+                        'is_finalized' => false,
                     ];
                     $acceptedMitraIdByTeam[$team->id] = null;
                 }
@@ -160,6 +177,13 @@ class SelectMitraTeladan extends Page implements HasForms
                 $mitra = \App\Models\Mitra::find($mitraTeladan->mitra_id);
                 $nilai2Average = $nilai2Service->getAverageRating($mitraTeladan->id);
                 $ranking = isset($rankingMap[$mitraTeladan->id]) ? $rankingMap[$mitraTeladan->id] : null;
+                $totalPegawai = \App\Models\Employee::count();
+                $pegawaiSudahInput = 0;
+                if ($mitraTeladan) {
+                    $pegawaiSudahInput = \App\Models\Nilai2::where('mitra_teladan_id', $mitraTeladan->id)->distinct('user_id')->count('user_id');
+                }
+                $isFinalizable = $totalPegawai > 0 && $pegawaiSudahInput === $totalPegawai;
+                $isFinalized = $mitraTeladan && $mitraTeladan->status_phase_2;
                 $accepted[] = [
                     'team_name'     => $team->name,
                     'mitra_name'    => $mitra?->name ?? '-',
@@ -170,6 +194,10 @@ class SelectMitraTeladan extends Page implements HasForms
                     'user_has_nilai2' => $mitraTeladan ? $nilai2Service->userHasNilai2($mitraTeladan->id, $userId) : false,
                     'nilai2_average' => $nilai2Average,
                     'ranking' => $ranking,
+                    'total_pegawai' => $totalPegawai,
+                    'pegawai_sudah_input' => $pegawaiSudahInput,
+                    'is_finalizable' => $isFinalizable,
+                    'is_finalized' => $isFinalized,
                 ];
                 $acceptedMitraIdByTeam[$team->id] = $mitraTeladan->mitra_id;
             } else {
@@ -183,6 +211,10 @@ class SelectMitraTeladan extends Page implements HasForms
                     'user_has_nilai2' => false,
                     'nilai2_average' => null,
                     'ranking' => null,
+                    'total_pegawai' => 0,
+                    'pegawai_sudah_input' => 0,
+                    'is_finalizable' => false,
+                    'is_finalized' => false,
                 ];
                 $acceptedMitraIdByTeam[$team->id] = null;
             }
@@ -304,4 +336,61 @@ class SelectMitraTeladan extends Page implements HasForms
         $this->loadTopMitras();
     }
 
+    public function export()
+    {
+        $nilai2Service = app(\App\Services\Nilai2Service::class);
+        $reportData = $nilai2Service->getReportData($this->selectedYear, $this->selectedQuarter);
+
+        // Debug: log any non-UTF-8 values
+        foreach ($reportData as $group) {
+            foreach ($group['nilai2List'] as $row) {
+                foreach ($row as $value) {
+                    if (!mb_check_encoding($value, 'UTF-8')) {
+                        Log::error('Non-UTF8 value found', ['value' => $value]);
+                    }
+                }
+            }
+        }
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.nilai2-report', [
+            'reportData' => $reportData,
+            'year' => $this->selectedYear,
+            'quarter' => $this->selectedQuarter,
+        ])->download('nilai2-report.pdf');
+    }
+
+    public $showFinalisasiModal = false;
+    public $mitraTeladanIdToFinalize = null;
+
+    public function openFinalisasiModal($mitraTeladanId)
+    {
+        $this->mitraTeladanIdToFinalize = $mitraTeladanId;
+        $this->showFinalisasiModal = true;
+    }
+
+    public function finalizeAction()
+    {
+        $mitraTeladanId = $this->mitraTeladanIdToFinalize;
+        $mitraTeladan = \App\Models\MitraTeladan::find($mitraTeladanId);
+        if (!$mitraTeladan) {
+            \Filament\Notifications\Notification::make()
+                ->title('Mitra Teladan tidak ditemukan')
+                ->danger()
+                ->send();
+            $this->showFinalisasiModal = false;
+            return;
+        }
+        $avgRating2 = \App\Models\Nilai2::where('mitra_teladan_id', $mitraTeladanId)->avg('rerata');
+        $mitraTeladan->avg_rating_2 = $avgRating2;
+        $mitraTeladan->status_phase_2 = 1;
+        $mitraTeladan->save();
+        $this->showFinalisasiModal = false;
+        $this->mitraTeladanIdToFinalize = null;
+        $this->loadTopMitras();
+        \Filament\Notifications\Notification::make()
+            ->title('Finalisasi berhasil')
+            ->success()
+            ->body('Mitra Teladan telah difinalisasi.')
+            ->send();
+    }
 }
