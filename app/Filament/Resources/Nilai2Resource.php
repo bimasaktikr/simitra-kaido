@@ -30,7 +30,7 @@ class Nilai2Resource extends Resource
     {
         /** @var \App\Models\User|null $user */
         $user = \Filament\Facades\Filament::auth()?->user();
-        return $user && $user->hasRole('super_admin');
+        return $user && ($user->hasRole('super_admin') || $user->hasRole('Pegawai'));
     }
 
 
@@ -64,6 +64,40 @@ class Nilai2Resource extends Resource
 
     public static function table(Table $table): Table
     {
+        /** @var \App\Models\User|null $user */
+        $user = \Filament\Facades\Filament::auth()?->user();
+        $isSuperAdmin = $user && $user->hasRole('super_admin');
+
+        $filters = [
+            Tables\Filters\SelectFilter::make('year')
+                ->label('year')
+                ->options(fn () => \App\Models\MitraTeladan::query()->distinct()->pluck('year', 'year')->toArray())
+                ->query(function ($query, $state) {
+                    if ($state) {
+                        $query->whereHas('mitraTeladan', fn($q) => $q->where('year', $state));
+                    }
+                }),
+            Tables\Filters\SelectFilter::make('quarter')
+                ->label('quarter')
+                ->options(fn () => \App\Models\MitraTeladan::query()->distinct()->pluck('quarter', 'quarter')->toArray())
+                ->query(function ($query, $state) {
+                    if ($state) {
+                        $query->whereHas('mitraTeladan', fn($q) => $q->where('quarter', $state));
+                    }
+                }),
+        ];
+
+        if ($isSuperAdmin) {
+            $filters[] = Tables\Filters\SelectFilter::make('user_id')
+                ->label('user')
+                ->options(function () {
+                    return \App\Models\User::whereHas('employee')->pluck('name', 'id')->toArray();
+                });
+            $filters[] = Tables\Filters\SelectFilter::make('mitra_teladan_id')
+                ->label('mitraTeladan')
+                ->options(fn () => \App\Models\MitraTeladan::with('mitra')->get()->pluck('mitra.name', 'id')->toArray());
+        }
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('mitraTeladan.mitra.name')->label('mitraTeladan'),
@@ -81,48 +115,30 @@ class Nilai2Resource extends Resource
                 Tables\Columns\TextColumn::make('rerata'),
                 Tables\Columns\IconColumn::make('is_final')->boolean()->label('isFinal'),
             ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('year')
-                    ->label('year')
-                    ->options(fn () => \App\Models\MitraTeladan::query()->distinct()->pluck('year', 'year')->toArray())
-                    ->query(function ($query, $state) {
-                        if ($state) {
-                            $query->whereHas('mitraTeladan', fn($q) => $q->where('year', $state));
-                        }
-                    }),
-                Tables\Filters\SelectFilter::make('quarter')
-                    ->label('quarter')
-                    ->options(fn () => \App\Models\MitraTeladan::query()->distinct()->pluck('quarter', 'quarter')->toArray())
-                    ->query(function ($query, $state) {
-                        if ($state) {
-                            $query->whereHas('mitraTeladan', fn($q) => $q->where('quarter', $state));
-                        }
-                    }),
-                Tables\Filters\SelectFilter::make('user_id')
-                    ->label('user')
-                    ->options(function () {
-                        /** @var \App\Models\User|null $user */
-                        $user = \Filament\Facades\Filament::auth()?->user();
-                        $employeeUsers = \App\Models\User::whereHas('employee')->pluck('name', 'id')->toArray();
-                        if ($user && $user->hasRole('super_admin')) {
-                            return $employeeUsers;
-                        }
-                        return ($user && isset($employeeUsers[$user->id])) ? [$user->id => $user->name] : [];
-                    }),
-                Tables\Filters\SelectFilter::make('mitra_teladan_id')
-                    ->label('mitraTeladan')
-                    ->options(fn () => \App\Models\MitraTeladan::with('mitra')->get()->pluck('mitra.name', 'id')->toArray()),
-            ])
+            ->filters($filters)
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * Restrict data to current user if not super_admin
+     */
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+        /** @var \App\Models\User|null $user */
+        $user = \Filament\Facades\Filament::auth()?->user();
+        if ($user && !$user->hasRole('super_admin')) {
+            $query->where('user_id', $user->id);
+        }
+        return $query;
     }
 
     public static function getRelations(): array
