@@ -29,12 +29,14 @@ class SelectMitraTeladanExportController extends Controller
         $report = $nilai2Service->getReportData($year, $quarter);
         $reportData = $report['data'];
         $aspekDescriptions = $report['aspekDescriptions'];
+        $mitraRanking = $report['mitraRanking'];
 
         return Pdf::loadView('exports.nilai2-report', [
             'reportData' => $reportData,
             'year' => $year,
             'quarter' => $quarter,
             'aspekDescriptions' => $aspekDescriptions,
+            'mitraRanking' => $mitraRanking,
         ])->setPaper('a4', 'landscape')->download('nilai2-report.pdf');
     }
 }

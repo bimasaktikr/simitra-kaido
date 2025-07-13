@@ -108,6 +108,9 @@ class Nilai2Service
             $teamName = $mitraTeladan->team?->name ?? '-';
             $mitraName = $mitraTeladan->mitra?->name ?? '-';
             $nilai2List = [];
+            $aspekSums = array_fill(1, 10, 0);
+            $rerataSum = 0;
+            $count = 0;
             foreach ($mitraTeladan->nilai2 as $nilai2) {
                 $employeeName = $nilai2->user?->employee?->name ?? $nilai2->user?->name ?? '-';
                 $nilai2List[] = [
@@ -122,7 +125,24 @@ class Nilai2Service
                     'aspek8' => $nilai2->aspek8,
                     'aspek9' => $nilai2->aspek9,
                     'aspek10' => $nilai2->aspek10,
+                    'rerata' => $nilai2->rerata,
                 ];
+                for ($i = 1; $i <= 10; $i++) {
+                    $aspekSums[$i] += $nilai2->{'aspek'.$i};
+                }
+                $rerataSum += $nilai2->rerata;
+                $count++;
+            }
+            // Calculate averages
+            if ($count > 0) {
+                $averageRow = [
+                    'employeeName' => 'average',
+                ];
+                for ($i = 1; $i <= 10; $i++) {
+                    $averageRow['aspek'.$i] = round($aspekSums[$i] / $count, 2);
+                }
+                $averageRow['rerata'] = round($rerataSum / $count, 2);
+                $nilai2List[] = $averageRow;
             }
             $reportData[] = [
                 'mitraName' => $mitraName,
@@ -130,9 +150,37 @@ class Nilai2Service
                 'nilai2List' => $nilai2List,
             ];
         }
+
+        // Build mitra ranking
+        $mitraRanking = [];
+        foreach ($mitraTeladans as $mitraTeladan) {
+            $mitraName = $mitraTeladan->mitra?->name ?? '-';
+            $rerataSum = 0;
+            $count = 0;
+            foreach ($mitraTeladan->nilai2 as $nilai2) {
+                $rerataSum += $nilai2->rerata;
+                $count++;
+            }
+            $avgRerata = $count > 0 ? round($rerataSum / $count, 2) : 0;
+            $mitraRanking[] = [
+                'mitraName' => $mitraName,
+                'avgRerata' => $avgRerata,
+            ];
+        }
+        // Sort by avgRerata descending
+        usort($mitraRanking, function($a, $b) {
+            return $b['avgRerata'] <=> $a['avgRerata'];
+        });
+        // Add ranking number
+        foreach ($mitraRanking as $i => &$row) {
+            $row['rank'] = $i + 1;
+        }
+        unset($row);
+
         return [
             'data' => $reportData,
             'aspekDescriptions' => self::$aspekDescriptions,
+            'mitraRanking' => $mitraRanking,
         ];
     }
 }

@@ -51,5 +51,28 @@
             </tbody>
         </table>
     @endforeach
+
+    @if(isset($mitraRanking) && count($mitraRanking))
+        <div class="page-break"></div>
+        <h2>Ranking Mitra Teladan</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>rank</th>
+                    <th>mitraName</th>
+                    <th>avgRerata</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($mitraRanking as $row)
+                    <tr @if($row['rank'] === 1) style="background:#d1fae5;font-weight:bold" @endif>
+                        <td>{{ $row['rank'] }}</td>
+                        <td>{{ $row['mitraName'] }}</td>
+                        <td>{{ $row['avgRerata'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
 </body>
 </html>
