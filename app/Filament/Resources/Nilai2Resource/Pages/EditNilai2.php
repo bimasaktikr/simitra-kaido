@@ -16,6 +16,21 @@ class EditNilai2 extends EditRecord
         ];
     }
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $total = 0;
+        $count = 0;
+        for ($i = 1; $i <= 10; $i++) {
+            $value = (int) ($data['aspek' . $i] ?? 0);
+            if ($value) {
+                $total += $value;
+                $count++;
+            }
+        }
+        $data['rerata'] = $count > 0 ? round($total / $count, 2) : 0;
+        return $data;
+    }
+
     //customize redirect after create
     public function getRedirectUrl(): string
     {

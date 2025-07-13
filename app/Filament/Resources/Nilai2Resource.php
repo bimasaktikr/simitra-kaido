@@ -49,18 +49,162 @@ class Nilai2Resource extends Resource
                     ->relationship('user', 'name')
                     ->label('user')
                     ->required(),
-                Forms\Components\TextInput::make('aspek1')->integer()->required(),
-                Forms\Components\TextInput::make('aspek2')->integer()->required(),
-                Forms\Components\TextInput::make('aspek3')->integer()->required(),
-                Forms\Components\TextInput::make('aspek4')->integer()->required(),
-                Forms\Components\TextInput::make('aspek5')->integer()->required(),
-                Forms\Components\TextInput::make('aspek6')->integer()->required(),
-                Forms\Components\TextInput::make('aspek7')->integer()->required(),
-                Forms\Components\TextInput::make('aspek8')->integer()->required(),
-                Forms\Components\TextInput::make('aspek9')->integer()->required(),
-                Forms\Components\TextInput::make('aspek10')->integer()->required(),
-                Forms\Components\TextInput::make('rerata')->numeric()->label('rerata')->disabled(),
+                Forms\Components\TextInput::make('rerata')
+                    ->numeric()
+                    ->label('rerata')
+                    ->disabled()
+                    ->reactive()
+                    ->afterStateHydrated(function ($component, $state, $record, $get) {
+                        // On edit, set rerata from record if available, otherwise calculate
+                        if ($record) {
+                            $component->state($record->rerata);
+                        } else {
+                            $total = 0;
+                            $count = 0;
+                            for ($i = 1; $i <= 10; $i++) {
+                                $value = (int) $get('aspek' . $i);
+                                if ($value) {
+                                    $total += $value;
+                                    $count++;
+                                }
+                            }
+                            $component->state($count > 0 ? round($total / $count, 2) : 0);
+                        }
+                    })
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        $total = 0;
+                        $count = 0;
+                        for ($i = 1; $i <= 10; $i++) {
+                            $value = (int) $get('aspek' . $i);
+                            if ($value) {
+                                $total += $value;
+                                $count++;
+                            }
+                        }
+                        $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                    }),
                 Forms\Components\Toggle::make('is_final')->label('isFinal'),
+                // Update aspek fields to recalculate rerata
+                Forms\Components\TextInput::make('aspek1')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
+                Forms\Components\TextInput::make('aspek2')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
+                Forms\Components\TextInput::make('aspek3')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
+                Forms\Components\TextInput::make('aspek4')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
+                Forms\Components\TextInput::make('aspek5')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
+                Forms\Components\TextInput::make('aspek6')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
+                Forms\Components\TextInput::make('aspek7')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
+                Forms\Components\TextInput::make('aspek8')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
+                Forms\Components\TextInput::make('aspek9')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
+                Forms\Components\TextInput::make('aspek10')->integer()->required()->reactive()->live()->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    $total = 0;
+                    $count = 0;
+                    for ($i = 1; $i <= 10; $i++) {
+                        $value = (int) $get('aspek' . $i);
+                        if ($value) {
+                            $total += $value;
+                            $count++;
+                        }
+                    }
+                    $set('rerata', $count > 0 ? round($total / $count, 2) : 0);
+                }),
             ]);
     }
 
@@ -157,5 +301,20 @@ class Nilai2Resource extends Resource
             'create' => Pages\CreateNilai2::route('/create'),
             'edit' => Pages\EditNilai2::route('/{record}/edit'),
         ];
+    }
+
+    private static function updateRerata(callable $set, callable $get)
+    {
+        $total = 0;
+        $count = 0;
+        for ($i = 1; $i <= 10; $i++) {
+            $value = (int) $get('aspek' . $i);
+            if ($value) {
+                $total += $value;
+                $count++;
+            }
+        }
+        $rerata = $count > 0 ? round($total / $count, 2) : 0;
+        $set('rerata', $rerata);
     }
 }

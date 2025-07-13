@@ -1,11 +1,13 @@
 <x-filament-panels::page>
-    <div class="flex justify-end mb-4">
-        <a
-            href="{{ route('export.nilai2.report', ['year' => $selectedYear, 'quarter' => $selectedQuarter]) }}"
-            class="px-4 py-2 text-white rounded filament-button bg-primary-600"
-            target="_blank"
-        >export</a>
-    </div>
+    @if(in_array(auth()->user()->getRoleNames()->first(), ['super_admin', 'Ketua SDM']))
+        <div class="flex justify-end mb-4">
+            <a
+                href="{{ route('export.nilai2.report', ['year' => $selectedYear, 'quarter' => $selectedQuarter]) }}"
+                class="px-4 py-2 text-white rounded filament-button bg-primary-600"
+                target="_blank"
+            >export</a>
+        </div>
+    @endif
     {{-- <pre class="p-2 mb-2 text-xs text-gray-400 bg-gray-100 rounded dark:bg-gray-800">$groupedByTeam: @json($groupedByTeam)</pre> --}}
     {{-- Debug output for troubleshooting --}}
     {{-- <pre class="p-2 mb-4 text-xs text-gray-400 bg-gray-100 rounded dark:bg-gray-800">$acceptedMitraTeladan: @json($acceptedMitraTeladan)</pre> --}}
@@ -41,7 +43,7 @@
                             <svg class="mr-2 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z"/></svg>
                             Nilai
                         </button>
-                        @if(in_array(auth()->user()->getRoleNames()->first(), ['super_admin', 'ketua_sdm']))
+                        @if(in_array(auth()->user()->getRoleNames()->first(), ['super_admin', 'Ketua SDM']))
                             @if($item['is_finalized'])
                                 <button
                                     disabled
@@ -53,7 +55,7 @@
                                     class="inline-flex items-center px-4 py-2 mt-3 text-sm font-semibold text-black bg-blue-600 rounded-lg shadow transition-all duration-150 dark:text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
                                 >Finalisasi</button>
                             @else
-                                <div class="mt-3 text-xs text-red-600 dark:text-red-400 font-semibold">
+                                <div class="mt-3 text-xs font-semibold text-red-600 dark:text-red-400">
                                     pegawai sudah input: <span class="font-bold">{{ $item['pegawai_sudah_input'] }}</span> / <span class="font-bold">{{ $item['total_pegawai'] }}</span>
                                 </div>
                             @endif
