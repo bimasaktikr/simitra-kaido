@@ -6,8 +6,10 @@ use App\Filament\Resources\SurveyResource\Pages;
 use App\Filament\Resources\SurveyResource\RelationManagers;
 use App\Models\Survey;
 use Filament\Forms;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -46,68 +48,107 @@ class SurveyResource extends Resource
     {
         return $form
             ->schema([
-                Select::make('master_survey_id')
-                    ->label('Master Survey')
-                    ->relationship('masterSurvey', 'name')
-                    ->getOptionLabelFromRecordUsing(fn($record) => $record->name . ' (' . $record->code . ')')
-                    ->searchable()
-                    ->createOptionForm([
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nama Survey')
-                            ->required(),
-                        Forms\Components\TextInput::make('code')
-                            ->label('Kode Survey')
-                            ->required(),
-                    ])
-                    ->required(),
-                Select::make('triwulan')
-                    ->label('Triwulan')
-                    ->options([
-                        1 => 'Q1',
-                        2 => 'Q2',
-                        3 => 'Q3',
-                        4 => 'Q4',
-                    ])
-                    ->required(),
-                Select::make('year')
-                    ->label('Year')
-                    ->options(
-                        collect(range(now()->year, 2020))->mapWithKeys(fn($y) => [$y => $y])->toArray()
-                    )
-                    ->required(),
-                Select::make('payment_id')
-                    ->label('Payment Type')
-                    ->relationship('payment', 'payment_type')
-                    ->required(),
-                Select::make('team_id')
-                    ->label('Team')
-                    ->relationship('team', 'name')
-                    ->required(),
-                TextInput::make('rate')
-                    ->numeric()
-                    ->prefix('Rp.')
-                    ->label('Rate')
-                    ->required(),
+                Section::make('Survey Info')
+                    ->schema([
+                        Grid::make()
+                            ->columns(2)
+                            ->schema([
+                                Select::make('master_survey_id')
+                                    ->label('Master Survey')
+                                    ->relationship('masterSurvey', 'name')
+                                    ->getOptionLabelFromRecordUsing(fn($record) => $record->name . ' (' . $record->code . ')')
+                                    ->searchable()
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('name')
+                                            ->label('Nama Survey')
+                                            ->required(),
+                                        Forms\Components\TextInput::make('code')
+                                            ->label('Kode Survey')
+                                            ->required(),
+                                    ])
+                                    ->required(),
+                                Select::make('team_id')
+                                    ->label('Team')
+                                    ->relationship('team', 'name')
+                                    ->required(),
+                                Select::make('triwulan')
+                                    ->label('Triwulan')
+                                    ->options([
+                                        1 => 'Q1',
+                                        2 => 'Q2',
+                                        3 => 'Q3',
+                                        4 => 'Q4',
+                                    ])
+                                    ->required(),
+                                Select::make('year')
+                                    ->label('Year')
+                                    ->options(
+                                        collect(range(now()->year, 2020))->mapWithKeys(fn($y) => [$y => $y])->toArray()
+                                    )
+                                    ->required(),
+                            ])
+                    ]),
+
+                Section::make('Pembayaran')
+                    ->schema([
+                        Grid::make()
+                            ->columns(2)
+                            ->schema([
+                                Select::make('payment_month')
+                                    ->label('Payment Month')
+                                    ->options([
+                                        1 => 'January',
+                                        2 => 'February',
+                                        3 => 'March',
+                                        4 => 'April',
+                                        5 => 'May',
+                                        6 => 'June',
+                                        7 => 'July',
+                                        8 => 'August',
+                                        9 => 'September',
+                                        10 => 'October',
+                                        11 => 'November',
+                                        12 => 'December',
+                                    ])
+                                    ->required(),
+                                Select::make('payment_id')
+                                    ->label('Payment Type')
+                                    ->relationship('payment', 'payment_type')
+                                    ->required(),
+                                TextInput::make('rate')
+                                    ->numeric()
+                                    ->prefix('Rp.')
+                                    ->label('Rate')
+                                    ->required(),
+                            ])
+                    ]),
+
+
                 // FileUpload::make('file')
                 //     ->label('Attachment')
                 //     ->directory('survey-files')
                 //     ->maxSize(2048)
                 //     ->preserveFilenames()
                 //     ->nullable(),
-                Toggle::make('is_scored')
-                    ->label('Scored?')
-                    ->disabled(),
-                Toggle::make('is_synced')
-                    ->label('Synced?')
-                    ->disabled(),
-                Select::make('status')
-                    ->options([
-                        'not started' => 'Not Started',
-                        'in progress' => 'In Progress',
-                        'done' => 'Done',
-                    ])
-                    ->label('Status')
-                    ->required(),
+                Section::make('Status')
+                    ->columns(3)
+                    ->schema([
+                        Select::make('status')
+                        ->options([
+                            'not started' => 'Not Started',
+                            'in progress' => 'In Progress',
+                            'done' => 'Done',
+                        ])
+                        ->label('Status')
+                        ->required(),
+                        Toggle::make('is_scored')
+                            ->label('Scored?')
+                            ->disabled(),
+                        Toggle::make('is_synced')
+                            ->label('Synced?')
+                            ->disabled(),
+
+                    ]),
             ]);
     }
 

@@ -12,6 +12,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
+use Filament\Support\Enums\MaxWidth;
 use Filament\Tables;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -20,6 +21,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Contracts\View\View; // at top
+
 
 class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
 {
@@ -182,7 +185,7 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                         ->modalSubmitActionLabel('Import'),
                      // ✅ Add this Finalize button
 
-        Action::make('toggleFinalizeNilai')
+            Action::make('toggleFinalizeNilai')
                 ->label(fn () => $this->record->is_scored ? 'Unfinalize Nilai' : 'Finalize Nilai')
                 ->icon(fn () => $this->record->is_scored ? 'heroicon-o-lock-open' : 'heroicon-o-lock-closed')
                 ->color(fn () => $this->record->is_scored ? 'gray' : 'danger')
@@ -211,7 +214,24 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                         ->success()
                         ->send();
                 }),
-                ];
+            Action::make('Add Mitra Assignment')
+                ->label('Add Mitra Assignment')
+                ->icon('heroicon-o-plus')
+                ->color('success')
+                ->requiresConfirmation(false) // we’re showing a table, no need for confirm
+                ->modalHeading('Add Mitra to Assignment')
+                ->modalWidth(MaxWidth::ExtraLarge)
+                ->slideOver() // optional, looks nice for wide tables
+                ->modalSubmitAction(false) // modal has no submit; actions are per-row inside the table
+                ->extraModalWindowAttributes([
+                    'style' => 'width:48vw;max-width:48vw;', // ≈ half screen
+                ])
+                ->modalContent(function (): View {
+                    return view('filament.partials.mitra-picker-modal', [
+                        'parentId' => $this->record->id,   // ✅ use the page’s record
+                    ]);
+                }),
+            ];
 
     }
 }

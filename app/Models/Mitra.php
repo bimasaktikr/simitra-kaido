@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Mitra extends Model
 {
@@ -29,15 +30,32 @@ class Mitra extends Model
         return $this->belongsTo(User::class, 'id');
     }
 
-    public function surveys()
+    public function transactions()
     {
+        return $this->hasMany(Transaction::class, 'mitra_id', 'id');
+    }
+    public function surveys(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            \App\Models\Survey::class,   // related
+            'transactions',              // pivot table
+            'mitra_id',                  // FK on pivot -> mitras
+            'survey_id',                 // FK on pivot -> surveys
+            'id',                        // local key on mitras
+            'id'                         // local key on surveys
+        );
+    }
+
+    public function nilai1s()
+    {
+        // Mitra -> (hasMany) Transactions -> (hasOne) Nilai1
         return $this->hasManyThrough(
-            Survey::class,
-            Transaction::class,
-            'mitra_id',    // Foreign key on transactions table...
-            'id',          // Foreign key on surveys table...
-            'id_sobat',    // Local key on mitras table...
-            'survey_id'    // Local key on transactions table...
+            Nilai1::class,          // related
+            Transaction::class, // through
+            'mitra_id',             // FK on transactions -> mitras.id
+            'transaction_id',       // FK on nilai1s -> transactions.id
+            'id',                   // local key on mitras
+            'id'                    // local key on transactions
         );
     }
 
