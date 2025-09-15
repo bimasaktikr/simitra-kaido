@@ -16,6 +16,7 @@ class Survey extends Model
         'year',
         'master_survey_id',
         'payment_id',
+        'payment_month',
         'start_date',
         'end_date',
         'rate',
