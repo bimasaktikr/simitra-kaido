@@ -45,7 +45,7 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
         return Transaction::query()
                 ->where('survey_id', $this->record->id)
                 ->with(['mitra', 'nilai'])
-                ->whereHas('nilai') // Only include transactions with nilai
+                // ->whereHas('nilai') // Only include transactions with nilai
                 ->orderByDesc(
                     DB::raw('(SELECT rerata FROM nilai1s WHERE nilai1s.transaction_id = transactions.id LIMIT 1)')
                 );

@@ -81,15 +81,6 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                     ->sortable(query: fn (Builder $query, string $direction) =>
                         $query->orderBy('surveys_count', $direction)
                 ),
-
-                TextColumn::make('payment_this_month')
-                    ->label('Payment This Month')
-                    ->formatStateUsing(function ($state, Mitra $record) {
-                        // Assume payment_this_month is eager loaded or calculated in the query
-                        // If not, you may need to calculate it here
-                        return $state !== null ? 'IDR ' . number_format($state, 0, ',', '.') : '-';
-                    })
-                    ->sortable(),
                 // TextColumn::make('worked_this_master') // this is the alias from withCount()
                 //     ->label('Pernah di Master ini?')
                 //     ->formatStateUsing(fn ($state) => (int) $state > 0 ? 'Pernah' : 'Belum')
@@ -100,64 +91,37 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                 //             $query->orderBy('worked_this_master', $direction)
                 //     ),
 
-                // TextColumn::make('status_badge')
-                //     ->label('Status')
-                //     ->formatStateUsing(fn (Mitra $record) =>
-                //         $this->alreadyAssigned($record->id) ? 'Sudah ditugaskan' : 'Belum'
-                //     )
-                //     ->badge()
-                //     ->color(fn (Mitra $record) => $this->alreadyAssigned($record->id) ? 'success' : 'gray'),
+                TextColumn::make('status_badge')
+                    ->label('Status')
+                    ->formatStateUsing(fn (Mitra $record) =>
+                        $this->alreadyAssigned($record->id) ? 'Sudah ditugaskan' : 'Belum'
+                    )
+                    ->badge()
+                    ->color(fn (Mitra $record) => $this->alreadyAssigned($record->id) ? 'success' : 'gray'),
                 ])
-                ->actions([
-                    TableAction::make('add')
-                        ->label('Add')
-                        ->icon('heroicon-o-plus')
-                        ->color('success')
-                        ->modalHeading(fn (Mitra $record) => 'Add Assignment: '.$record->name)
-                        ->modalSubmitActionLabel('Save Assignment')
-                        ->form([
-                            TextInput::make('target')
-                                ->label('Target')
-                                ->numeric()
-                                ->required()
-                                ->minValue(0),
+            ->actions([
+                TableAction::make('add')
+                    ->label('Add')
+                    ->icon('heroicon-o-plus')
+                    ->color('success')
+                    ->disabled(fn (Mitra $record) => $this->alreadyAssigned($record->id))
+                    ->action(function (Mitra $record) {
+                        if ($this->alreadyAssigned($record->id)) {
+                            Notification::make()->title('Mitra sudah ada di survei ini.')->warning()->send();
+                            return;
+                        }
 
-                            TextInput::make('rate')
-                                ->label('Rate (IDR)')
-                                ->numeric()
-                                ->required()
-                                ->disabled()
-                                ->default(fn () => $this->survey?->rate ?? 0)
-                                ->minValue(0),
-                        ])
-                        // disable if already assigned to THIS survey
-                        ->disabled(fn (Mitra $record) => $this->alreadyAssigned($record->getKey()))
-                        ->action(function (Mitra $record, array $data) {
-                            // guard (race-condition safe)
-                            if ($this->alreadyAssigned($record->getKey())) {
-                                Notification::make()
-                                    ->title('Mitra sudah ada di survei ini.')
-                                    ->warning()
-                                    ->send();
-                                return;
-                            }
+                        Transaction::create([
+                            'survey_id' => $this->surveyId,
+                            'mitra_id'  => $record->id,
+                            'target'    => 0,
+                            'rate'      => $this->survey?->rate ?? 0,
+                        ]);
 
-                            Transaction::create([
-                                'survey_id' => $this->surveyId,
-                                'mitra_id'  => $record->getKey(),      // works even if PK isn't "id"
-                                'target'    => (int) ($data['target'] ?? 0),
-                                'rate'      => (float) ($data['rate'] ?? ($this->survey?->rate ?? 0)),
-                            ]);
-
-                            Notification::make()
-                                ->title('Mitra ditambahkan ke assignment.')
-                                ->success()
-                                ->send();
-
-                            // refresh parent table if you listen for this
-                            $this->dispatch('mitra-added');
-                        }),
-                ])
+                        Notification::make()->title('Mitra ditambahkan ke assignment.')->success()->send();
+                        $this->dispatch('mitra-added');
+                    }),
+            ])
             ->filters([
                 // ✅ In this survey? (Yes / No / Any)
                 // TernaryFilter::make('in_this_survey')
@@ -215,11 +179,6 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
     {
         $masterId = $this->survey->master_survey_id;
 
-        $month      = (int) $this->survey->payment_month;   // 1..12
-        $year       = $this->survey->year;
-
-        $mitraKey = (new Mitra())->getQualifiedKeyName(); // ✅ "mitras.id" or "mitras.id_sobat"
-
         return \App\Models\Mitra::query()
             // average rating for THIS survey
             // ->withAvg([
@@ -247,14 +206,6 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
             ->withCount([
                 'transactions as in_this_survey' => fn ($query) =>
                     $query->where('survey_id', $this->surveyId),
-            ])
-            ->addSelect([
-                'payment_this_month' => Transaction::query()
-                    ->selectRaw('COALESCE(SUM(transactions.target * transactions.rate), 0)')
-                    ->join('surveys', 'surveys.id', '=', 'transactions.survey_id')
-                    ->where('surveys.payment_month', $month)
-                    ->when($year, fn ($q) => $q->where('surveys.year', $year))
-                    ->whereColumn('transactions.mitra_id', $mitraKey),
             ]);
     }
 
