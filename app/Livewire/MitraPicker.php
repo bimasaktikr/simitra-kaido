@@ -2,15 +2,20 @@
 
 namespace App\Livewire;
 
+use App\Models\MaximalPayment;
 use App\Models\Mitra;
 use App\Models\Survey;
 use App\Models\Transaction;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Support\Facades\Filament;
 use Filament\Forms\Contracts\HasForms;                 // ✅ add
 use Filament\Forms\Concerns\InteractsWithForms;       // ✅ add
+use Filament\Forms\Get;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Table;
@@ -22,6 +27,7 @@ use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TernaryFilter;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class MitraPicker extends Component implements HasTable, HasForms   // ✅ add HasForms
@@ -109,54 +115,226 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                 //     ->color(fn (Mitra $record) => $this->alreadyAssigned($record->id) ? 'success' : 'gray'),
                 ])
                 ->actions([
+                    // TableAction::make('add')
+                    //     ->label('Add')
+                    //     ->icon('heroicon-o-plus')
+                    //     ->color('success')
+                    //     ->modalHeading(fn (Mitra $record) => 'Add Assignment: '.$record->name)
+                    //     ->modalSubmitActionLabel('Save Assignment')
+                    //     ->form([
+                    //         TextInput::make('target')
+                    //             ->label('Target')
+                    //             ->numeric()
+                    //             ->required()
+                    //             ->minValue(0),
+
+                    //         TextInput::make('rate')
+                    //             ->label('Rate (IDR)')
+                    //             ->numeric()
+                    //             ->required()
+                    //             ->disabled()
+                    //             ->default(fn () => $this->survey?->rate ?? 0)
+                    //             ->minValue(0),
+                    //     ])
+                    //     ->disabled(function (Mitra $record): bool {
+                    //         // 1) already in THIS survey?
+                    //         if ($this->alreadyAssigned($record->getKey())) {
+                    //             return true;
+                    //         }
+
+                    //         // 2) hit monthly cap?
+                    //         $cap = MaximalPayment::value(); // 0 = no cap
+                    //         if ($cap <= 0) {
+                    //             return false;
+                    //         }
+
+                    //         $paidThisMonth = (int) ($record->payment_this_month ?? 0); // from your query addSelect
+                    //         return $paidThisMonth >= $cap;
+                    //     })
+                    //     ->disabledTooltip(function (Mitra $record): ?string {
+                    //         if ($this->alreadyAssigned($record->getKey())) {
+                    //             return 'Mitra sudah ditugaskan di survei ini.';
+                    //         }
+                    //         $cap = MaximalPayment::value();
+                    //         if ($cap > 0) {
+                    //             $paid = (int) ($record->payment_this_month ?? 0);
+                    //             if ($paid >= $cap) {
+                    //                 return 'Batas pembayaran bulanan sudah tercapai.';
+                    //             }
+                    //         }
+                    //         return null; // no tooltip if enabled
+                    //     })
+                    //     ->action(function (Mitra $record, array $data) {
+                    //         // guard (race-condition safe)
+                    //         if ($this->alreadyAssigned($record->getKey())) {
+                    //             Notification::make()
+                    //                 ->title('Mitra sudah ada di survei ini.')
+                    //                 ->warning()
+                    //                 ->send();
+                    //             return;
+                    //         }
+
+                    //         Transaction::create([
+                    //             'survey_id' => $this->surveyId,
+                    //             'mitra_id'  => $record->getKey(),      // works even if PK isn't "id"
+                    //             'target'    => (int) ($data['target'] ?? 0),
+                    //             'rate'      => (float) ($data['rate'] ?? ($this->survey?->rate ?? 0)),
+                    //         ]);
+
+                    //         Notification::make()
+                    //             ->title('Mitra ditambahkan ke assignment.')
+                    //             ->success()
+                    //             ->send();
+
+                    //         // refresh parent table if you listen for this
+                    //         $this->dispatch('mitra-added');
+                    //     }),
                     TableAction::make('add')
                         ->label('Add')
                         ->icon('heroicon-o-plus')
                         ->color('success')
-                        ->modalHeading(fn (Mitra $record) => 'Add Assignment: '.$record->name)
-                        ->modalSubmitActionLabel('Save Assignment')
-                        ->form([
-                            TextInput::make('target')
-                                ->label('Target')
-                                ->numeric()
-                                ->required()
-                                ->minValue(0),
 
-                            TextInput::make('rate')
-                                ->label('Rate (IDR)')
-                                ->numeric()
-                                ->required()
-                                ->disabled()
-                                ->default(fn () => $this->survey?->rate ?? 0)
-                                ->minValue(0),
-                        ])
-                        // disable if already assigned to THIS survey
-                        ->disabled(fn (Mitra $record) => $this->alreadyAssigned($record->getKey()))
-                        ->action(function (Mitra $record, array $data) {
-                            // guard (race-condition safe)
+                        // 🔒 Disable if already assigned OR cap already reached for this month
+                        ->disabled(function (Mitra $record): bool {
                             if ($this->alreadyAssigned($record->getKey())) {
+                                return true;
+                            }
+
+                            $cap = MaximalPayment::value(); // 0 = no cap
+                            if ($cap <= 0) return false;
+
+                            $paidThisMonth = (int) ($record->payment_this_month ?? 0);
+                            return $paidThisMonth >= $cap;
+                        })
+                        ->modalHeading(fn (Mitra $record) => 'Add Assignment: ' . $record->name)
+
+                        // 🧾 Form with live preview (rate locked to survey rate)
+                        ->form(function (Mitra $record) {
+                            $cap   = MaximalPayment::value();
+                            $month = (int) $this->survey->payment_month;
+                            $year  = (int) $this->survey->year;
+
+                            // authoritative current sum (server)
+                            $current = (int) DB::table('transactions')
+                                ->join('surveys', 'surveys.id', '=', 'transactions.survey_id')
+                                ->where('transactions.mitra_id', $record->getKey())
+                                ->where('surveys.payment_month', $month)
+                                ->where('surveys.year', $year)
+                                ->selectRaw('COALESCE(SUM(transactions.target * transactions.rate), 0) AS total')
+                                ->value('total');
+
+                            $fmt = fn (int $v) => 'Rp' . number_format($v, 0, ',', '.');
+
+                            return [
+                                Section::make() // compact summary bar
+                                    ->compact()
+                                    ->schema([
+                                        Grid::make(3)
+                                            ->schema([
+                                                Placeholder::make('cap_info')
+                                                    ->label('Batas Bayar')
+                                                    ->inlineLabel()
+                                                    ->content($cap > 0 ? $fmt($cap) : '—')
+                                                    ->extraAttributes(['class' => 'text-xs text-gray-600']),
+
+                                                Placeholder::make('paid_now')
+                                                    ->label('Dibayar')
+                                                    ->inlineLabel()
+                                                    ->content($fmt($current))
+                                                    ->extraAttributes(['class' => 'text-xs text-gray-600']),
+
+                                                Placeholder::make('remain_now')
+                                                    ->label('Sisa')
+                                                    ->inlineLabel()
+                                                    ->content($cap > 0 ? $fmt(max(0, $cap - $current)) : '—')
+                                                    ->extraAttributes(['class' => 'text-xs text-gray-600']),
+                                            ])
+                                            ->extraAttributes(['class' => 'gap-2']),
+                                    ]),
+
+                                Grid::make(2) // inputs, still compact
+                                    ->schema([
+                                        TextInput::make('target')
+                                            ->label('Target')
+                                            ->numeric()
+                                            ->required()
+                                            ->minValue(0)
+                                            ->live(debounce: 300),
+
+                                        TextInput::make('rate')
+                                            ->label('Rate (IDR)')
+                                            ->numeric()
+                                            ->required()
+                                            ->disabled()
+                                            ->default((int) ($this->survey?->rate ?? 0))
+                                            ->minValue(0)
+                                            ->live(debounce: 300),
+                                    ])
+                                    ->extraAttributes(['class' => 'gap-3 mt-1']),
+
+                                Grid::make(2) // compact preview
+                                    ->schema([
+                                        Placeholder::make('projected_add')
+                                            ->label('Tambah')
+                                            ->inlineLabel()
+                                            ->content(fn (Get $get) => $fmt(((int) $get('target')) * ((int) $get('rate'))))
+                                            ->extraAttributes(['class' => 'text-xs text-gray-600']),
+
+                                        Placeholder::make('projected_total')
+                                            ->label('Total')
+                                            ->inlineLabel()
+                                            ->content(fn (Get $get) => $fmt($current + (((int) $get('target')) * ((int) $get('rate')))))
+                                            ->extraAttributes(['class' => 'text-xs text-gray-600']),
+                                    ])
+                                    ->extraAttributes(['class' => 'gap-2 mt-1']),
+                            ];
+                        })
+
+                        // ✅ Submit (race-condition safe): recheck against DB
+                        ->action(function (Mitra $record, array $data) {
+                            // 1) Prevent duplicate in this survey
+                            if ($this->alreadyAssigned($record->getKey())) {
+                                Notification::make()->title('Mitra sudah ada di survei ini.')->warning()->send();
+                                return;
+                            }
+
+                            $cap   = MaximalPayment::value(); // 0 => no cap
+                            $month = (int) $this->survey->payment_month;
+                            $year  = (int) $this->survey->year;
+
+                            $current = (int) DB::table('transactions')
+                                ->join('surveys', 'surveys.id', '=', 'transactions.survey_id')
+                                ->where('transactions.mitra_id', $record->getKey())
+                                ->where('surveys.payment_month', $month)
+                                ->where('surveys.year', $year)
+                                ->selectRaw('COALESCE(SUM(transactions.target * transactions.rate), 0) AS total')
+                                ->value('total');
+
+                            $target = (int) ($data['target'] ?? 0);
+                            $rate   = (int) ($data['rate'] ?? ($this->survey?->rate ?? 0));
+                            $added  = $target * $rate;
+
+                            if ($cap > 0 && ($current + $added) > $cap) {
+                                $remaining = max(0, $cap - $current);
                                 Notification::make()
-                                    ->title('Mitra sudah ada di survei ini.')
-                                    ->warning()
+                                    ->title('Melebihi batas pembayaran bulanan')
+                                    ->body('Sisa kuota bulan ini: Rp' . number_format($remaining, 0, ',', '.'))
+                                    ->danger()
                                     ->send();
                                 return;
                             }
 
+                            // 2) Create the transaction
                             Transaction::create([
                                 'survey_id' => $this->surveyId,
-                                'mitra_id'  => $record->getKey(),      // works even if PK isn't "id"
-                                'target'    => (int) ($data['target'] ?? 0),
-                                'rate'      => (float) ($data['rate'] ?? ($this->survey?->rate ?? 0)),
+                                'mitra_id'  => $record->getKey(),
+                                'target'    => $target,
+                                'rate'      => $rate,
                             ]);
 
-                            Notification::make()
-                                ->title('Mitra ditambahkan ke assignment.')
-                                ->success()
-                                ->send();
-
-                            // refresh parent table if you listen for this
+                            Notification::make()->title('Mitra ditambahkan ke assignment.')->success()->send();
                             $this->dispatch('mitra-added');
-                        }),
+                        })
                 ])
             ->filters([
                 // ✅ In this survey? (Yes / No / Any)
@@ -284,5 +462,22 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
     public function render()
     {
         return view('livewire.mitra-picker');
+    }
+
+    protected function getAddDisabledReason(\App\Models\Mitra $record): ?string
+    {
+        if ($this->alreadyAssigned($record->getKey())) {
+            return 'Mitra sudah ditugaskan di survei ini.';
+        }
+
+        $cap = \App\Models\MaximalPayment::value(); // 0 = no cap
+        if ($cap > 0) {
+            $paid = (int) ($record->payment_this_month ?? 0); // from your query addSelect
+            if ($paid >= $cap) {
+                return 'Batas pembayaran bulanan sudah tercapai.';
+            }
+        }
+
+        return null; // no reason -> not disabled
     }
 }

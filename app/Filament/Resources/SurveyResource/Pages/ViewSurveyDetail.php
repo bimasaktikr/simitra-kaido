@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\SurveyResource\Pages;
 
 use App\Filament\Resources\SurveyResource;
+use App\Imports\SurveyNilaiImport;
 use App\Imports\SurveyTransactionImport;
 use App\Models\Survey;
 use App\Models\Transaction;
 use App\Services\MitraService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -132,106 +134,250 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
         ];
     }
 
+    // public function getHeaderActions(): array
+    // {
+    //     return [
+    //         Action::make('Upload Mitra Excel')
+    //             ->form([
+    //                 FileUpload::make('file')
+    //                         ->label('Upload Excel File')
+    //                         ->disk('local')
+    //                         ->directory('survey-data')
+    //                         ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'])
+    //                         ->preserveFilenames()
+    //                         ->required(),
+    //                     ])
+    //                     ->action(function (array $data) {
+
+    //                         try {
+    //                             Excel::import(
+    //                                 new SurveyTransactionImport($this->record->id, $this->record->rate),
+    //                                 $data['file']
+    //                             );
+
+    //                             Notification::make()
+    //                                 ->title('Import successful!')
+    //                                 ->success()
+    //                                 ->send();
+    //                         } catch (\Exception $e) {
+    //                             // Optionally log error
+    //                             logger()->error('Excel Import Failed: ' . $e->getMessage());
+
+    //                             Notification::make()
+    //                                 ->title('Import failed!')
+    //                                 ->body('An error occurred during the import: ' . $e->getMessage())
+    //                                 ->danger()
+    //                                 ->send();
+    //                         }
+    //                     })
+    //                     ->modalHeading('Upload Mitra Assignment File')
+    //                     ->modalDescription(
+    //                         "Upload the Excel file containing the list of mitras and their target payments. The file should be in .xlsx or .csv format. Make sure to download the template first to ensure the correct format."
+    //                     )
+    //                     ->modalFooterActionsAlignment('between')
+
+    //                     ->extraModalFooterActions([
+    //                         Action::make('download-template')
+    //                             ->label('Download Template')
+    //                             ->icon('heroicon-o-arrow-down-tray')
+    //                             ->url(route('mitra.template.download'))
+    //                             ->openUrlInNewTab()
+    //                             ->color('secondary'),
+    //                     ])
+    //                     ->modalSubmitActionLabel('Import'),
+    //                  // ✅ Add this Finalize button
+
+    //         Action::make('toggleFinalizeNilai')
+    //             ->label(fn () => $this->record->is_scored ? 'Unfinalize Nilai' : 'Finalize Nilai')
+    //             ->icon(fn () => $this->record->is_scored ? 'heroicon-o-lock-open' : 'heroicon-o-lock-closed')
+    //             ->color(fn () => $this->record->is_scored ? 'gray' : 'danger')
+    //             ->requiresConfirmation()
+    //             // ->visible(fn () =>
+    //             //     ! $this->record->is_scored || Auth::user()->hasRole('superadmin')
+    //             // )
+    //             ->visible(fn () => ! $this->record->is_scored || auth()->user()->can('survey.unfinalize'))
+    //             ->action(function () {
+    //                 $survey = $this->record;
+
+    //                 // Restrict unfinalize unless superadmin
+    //                 if ($survey->is_scored && ! Auth::user()->hasRole('superadmin')) {
+    //                     Notification::make()
+    //                         ->title('You do not have permission to unfinalize this survey.')
+    //                         ->danger()
+    //                         ->send();
+    //                     return;
+    //                 }
+
+    //                 $survey->is_scored = ! $survey->is_scored;
+    //                 $survey->save();
+
+    //                 Notification::make()
+    //                     ->title($survey->is_scored ? 'Survey finalized!' : 'Finalization cancelled!')
+    //                     ->success()
+    //                     ->send();
+    //             }),
+    //         Action::make('Add Mitra Assignment')
+    //             ->label('Add Mitra Assignment')
+    //             ->icon('heroicon-o-plus')
+    //             ->color('success')
+    //             ->requiresConfirmation(false) // we’re showing a table, no need for confirm
+    //             ->modalHeading('Add Mitra to Assignment')
+    //             ->modalWidth(MaxWidth::ExtraLarge)
+    //             ->slideOver() // optional, looks nice for wide tables
+    //             ->modalSubmitAction(false) // modal has no submit; actions are per-row inside the table
+    //             ->extraModalWindowAttributes([
+    //                 'style' => 'width:48vw;max-width:48vw;', // ≈ half screen
+    //             ])
+    //             ->modalContent(function (): View {
+    //                 return view('filament.partials.mitra-picker-modal', [
+    //                     'parentId' => $this->record->id,   // ✅ use the page’s record
+    //                 ]);
+    //             }),
+    //         ];
+
+    // }
+
+
     public function getHeaderActions(): array
     {
         return [
-            Action::make('Upload Mitra Excel')
-                ->form([
-                    FileUpload::make('file')
+            // Group related to Mitra assignment & import
+            ActionGroup::make([
+                Action::make('Add Mitra Assignment')
+                    ->label('Add Mitra Assignment')
+                    ->icon('heroicon-o-plus')
+                    ->color('success')
+                    ->requiresConfirmation(false)
+                    ->modalHeading('Add Mitra to Assignment')
+                    ->modalWidth(MaxWidth::ExtraLarge)
+                    ->slideOver()
+                    ->modalSubmitAction(false)
+                    ->extraModalWindowAttributes(['style' => 'width:48vw;max-width:48vw;'])
+                    ->modalContent(function (): View {
+                        return view('filament.partials.mitra-picker-modal', [
+                            'parentId' => $this->record->id,
+                        ]);
+                    }),
+
+                Action::make('Upload Mitra Excel')
+                    ->label('Upload Mitra Excel')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->form([
+                        FileUpload::make('file')
                             ->label('Upload Excel File')
                             ->disk('local')
                             ->directory('survey-data')
-                            ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'])
+                            ->acceptedFileTypes([
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'text/csv',
+                            ])
                             ->preserveFilenames()
                             ->required(),
-                        ])
-                        ->action(function (array $data) {
+                    ])
+                    ->action(function (array $data) {
+                        try {
+                            Excel::import(
+                                new SurveyTransactionImport($this->record->id, $this->record->rate),
+                                $data['file']
+                            );
+                            Notification::make()->title('Import successful!')->success()->send();
+                        } catch (\Exception $e) {
+                            logger()->error('Excel Import Failed: ' . $e->getMessage());
+                            Notification::make()
+                                ->title('Import failed!')
+                                ->body('An error occurred during the import: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->modalHeading('Upload Mitra Assignment File')
+                    ->modalDescription('Upload the Excel file …')
+                    ->modalFooterActionsAlignment('between')
+                    ->extraModalFooterActions([
+                        Action::make('download-template')
+                            ->label('Download Template')
+                            ->icon('heroicon-o-arrow-down-tray')
+                            ->url(route('mitra.template.download'))
+                            ->openUrlInNewTab()
+                            ->color('secondary'),
+                    ])
+                    ->modalSubmitActionLabel('Import'),
+                Action::make('Upload Penilaian Excel')
+                    ->label('Upload Penilaian Excel')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->form([
+                        FileUpload::make('file')
+                            ->label('Upload Excel File')
+                            ->disk('local')
+                            ->directory('survey-data')
+                            ->acceptedFileTypes([
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'text/csv',
+                            ])
+                            ->preserveFilenames()
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        try {
+                            Excel::import(
+                                new SurveyNilaiImport($this->record->id),
+                                $data['file']
+                            );
+                            Notification::make()->title('Import successful!')->success()->send();
+                        } catch (\Exception $e) {
+                            logger()->error('Excel Import Failed: ' . $e->getMessage());
+                            Notification::make()
+                                ->title('Import failed!')
+                                ->body('An error occurred during the import: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->modalHeading('Upload Penilaian Mitra')
+                    ->modalDescription('Download template di bawah, isi kolom aspek1–aspek3, lalu upload kembali file tersebut.')
+                    ->modalFooterActionsAlignment('between')
+                    ->extraModalFooterActions([
+                        Action::make('download-penilaian-template')
+                            ->label('Download Template (Penilaian)')
+                            ->icon('heroicon-o-arrow-down-tray')
+                            ->url(fn () => route('survey.penilaian.template.download', $this->record->id)) // ✅ dynamic
+                            ->openUrlInNewTab()
+                            ->color('secondary'),
+                    ])
+                    ->modalSubmitActionLabel('Import')
+            ])
+                ->label('Mitra')
+                ->icon('heroicon-o-user-group')
+                ->color('primary')
+                ->button(), // render as a button with dropdown
 
-                            try {
-                                Excel::import(
-                                    new SurveyTransactionImport($this->record->id, $this->record->rate),
-                                    $data['file']
-                                );
+            // Separate group for finalize toggle (or keep as a standalone action if you prefer)
+            ActionGroup::make([
+                Action::make('toggleFinalizeNilai')
+                    ->label(fn () => $this->record->is_scored ? 'Unfinalize Nilai' : 'Finalize Nilai')
+                    ->icon(fn () => $this->record->is_scored ? 'heroicon-o-lock-open' : 'heroicon-o-lock-closed')
+                    ->color(fn () => $this->record->is_scored ? 'gray' : 'danger')
+                    ->requiresConfirmation()
+                    ->visible(fn () => ! $this->record->is_scored || auth()->user()->can('survey.unfinalize'))
+                    ->action(function () {
+                        $survey = $this->record;
+                        if ($survey->is_scored && ! auth()->user()->hasRole('superadmin')) {
+                            Notification::make()->title('You do not have permission to unfinalize this survey.')->danger()->send();
+                            return;
+                        }
+                        $survey->is_scored = ! $survey->is_scored;
+                        $survey->save();
 
-                                Notification::make()
-                                    ->title('Import successful!')
-                                    ->success()
-                                    ->send();
-                            } catch (\Exception $e) {
-                                // Optionally log error
-                                logger()->error('Excel Import Failed: ' . $e->getMessage());
-
-                                Notification::make()
-                                    ->title('Import failed!')
-                                    ->body('An error occurred during the import: ' . $e->getMessage())
-                                    ->danger()
-                                    ->send();
-                            }
-                        })
-                        ->modalHeading('Upload Mitra Assignment File')
-                        ->modalDescription(
-                            "Upload the Excel file containing the list of mitras and their target payments. The file should be in .xlsx or .csv format. Make sure to download the template first to ensure the correct format."
-                        )
-                        ->modalFooterActionsAlignment('between')
-
-                        ->extraModalFooterActions([
-                            Action::make('download-template')
-                                ->label('Download Template')
-                                ->icon('heroicon-o-arrow-down-tray')
-                                ->url(route('mitra.template.download'))
-                                ->openUrlInNewTab()
-                                ->color('secondary'),
-                        ])
-                        ->modalSubmitActionLabel('Import'),
-                     // ✅ Add this Finalize button
-
-            Action::make('toggleFinalizeNilai')
-                ->label(fn () => $this->record->is_scored ? 'Unfinalize Nilai' : 'Finalize Nilai')
-                ->icon(fn () => $this->record->is_scored ? 'heroicon-o-lock-open' : 'heroicon-o-lock-closed')
-                ->color(fn () => $this->record->is_scored ? 'gray' : 'danger')
-                ->requiresConfirmation()
-                // ->visible(fn () =>
-                //     ! $this->record->is_scored || Auth::user()->hasRole('superadmin')
-                // )
-                ->visible(fn () => ! $this->record->is_scored || auth()->user()->can('survey.unfinalize'))
-                ->action(function () {
-                    $survey = $this->record;
-
-                    // Restrict unfinalize unless superadmin
-                    if ($survey->is_scored && ! Auth::user()->hasRole('superadmin')) {
                         Notification::make()
-                            ->title('You do not have permission to unfinalize this survey.')
-                            ->danger()
+                            ->title($survey->is_scored ? 'Survey finalized!' : 'Finalization cancelled!')
+                            ->success()
                             ->send();
-                        return;
-                    }
-
-                    $survey->is_scored = ! $survey->is_scored;
-                    $survey->save();
-
-                    Notification::make()
-                        ->title($survey->is_scored ? 'Survey finalized!' : 'Finalization cancelled!')
-                        ->success()
-                        ->send();
-                }),
-            Action::make('Add Mitra Assignment')
-                ->label('Add Mitra Assignment')
-                ->icon('heroicon-o-plus')
-                ->color('success')
-                ->requiresConfirmation(false) // we’re showing a table, no need for confirm
-                ->modalHeading('Add Mitra to Assignment')
-                ->modalWidth(MaxWidth::ExtraLarge)
-                ->slideOver() // optional, looks nice for wide tables
-                ->modalSubmitAction(false) // modal has no submit; actions are per-row inside the table
-                ->extraModalWindowAttributes([
-                    'style' => 'width:48vw;max-width:48vw;', // ≈ half screen
-                ])
-                ->modalContent(function (): View {
-                    return view('filament.partials.mitra-picker-modal', [
-                        'parentId' => $this->record->id,   // ✅ use the page’s record
-                    ]);
-                }),
-            ];
-
+                    }),
+            ])
+                ->label('Nilai')
+                ->icon('heroicon-o-lock-closed')
+                ->button(),
+        ];
     }
+
 }

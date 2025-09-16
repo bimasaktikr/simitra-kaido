@@ -168,4 +168,24 @@ class MitraService
 
         return true;
     }
+
+    public function sumPaymentForMonth(int|string $mitraId, int $month, ?int $year = null, ?int $masterSurveyId = null): float
+    {
+        $query = Transaction::query()
+            ->join('surveys', 'surveys.id', '=', 'transactions.survey_id')
+            ->where('transactions.mitra_id', $mitraId)
+            ->where('surveys.payment_month', $month);
+
+        if ($year !== null) {
+            $query->where('surveys.year', $year);
+        }
+
+        if ($masterSurveyId !== null) {
+            $query->where('surveys.master_survey_id', $masterSurveyId);
+        }
+
+        return (float) $query
+            ->selectRaw('COALESCE(SUM(transactions.target * transactions.rate), 0) AS total')
+            ->value('total');
+    }
 }
