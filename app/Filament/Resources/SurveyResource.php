@@ -26,7 +26,7 @@ class SurveyResource extends Resource
 {
     protected static ?string $model = Survey::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static ?string $navigationGroup = 'Surveys';
 
@@ -134,13 +134,13 @@ class SurveyResource extends Resource
                     ->columns(3)
                     ->schema([
                         Select::make('status')
-                        ->options([
-                            'not started' => 'Not Started',
-                            'in progress' => 'In Progress',
-                            'done' => 'Done',
-                        ])
-                        ->label('Status')
-                        ->required(),
+                            ->options([
+                                'not started' => 'Not Started',
+                                'in progress' => 'In Progress',
+                                'done' => 'Done',
+                            ])
+                            ->label('Status')
+                            ->required(),
                         Toggle::make('is_scored')
                             ->label('Scored?')
                             ->disabled(),

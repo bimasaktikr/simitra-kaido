@@ -78,7 +78,7 @@ class AdminPanelProvider extends PanelProvider
 
                 NavigationGroup::make('Penilaian')
                     ->label('Penilaian')
-                    ->icon('heroicon-o-user-group')
+                    ->icon('heroicon-o-pencil-square')
                     ->collapsed(),
                 NavigationGroup::make('Mitra')
                     ->label('Mitra')
@@ -86,7 +86,7 @@ class AdminPanelProvider extends PanelProvider
                     ->collapsed(),
                 NavigationGroup::make('Surveys')
                     ->label('Surveys')
-                    ->icon('heroicon-o-pencil-square')
+                    ->icon('heroicon-o-clipboard-document-list')
                     ->collapsed(),
                 NavigationGroup::make('Master Data')
                     ->label('Master Data')
