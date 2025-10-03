@@ -17,6 +17,7 @@ use Filament\Resources\Pages\Page;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables;
 use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,6 +25,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Contracts\View\View; // at top
+use Illuminate\Support\Collection;
+
 
 
 class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
@@ -68,9 +71,25 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
 
 
             TextColumn::make('rate')
-                ->label('Payment')
+                ->label('Rate')
                 ->money('IDR', true),
 
+            TextColumn::make('payment')
+                ->label('Payment')
+                ->money('IDR', true)
+                ->alignRight()
+                ->state(fn (Transaction $r) => (int) $r->target * (int) $r->rate)
+                ->sortable(
+                    query: fn (Builder $q, string $dir) =>
+                        $q->orderByRaw('target * rate ' . ($dir === 'desc' ? 'desc' : 'asc'))
+                )
+                ->summarize(
+                    Sum::make()
+                        ->label('Σ Payment')
+                        ->using(fn (Collection $records) =>
+                            $records->sum(fn (Transaction $r) => (int) $r->target * (int) $r->rate)
+                        )
+                ),
             TextColumn::make('nilai.aspek1')
                 ->label('Kualitas Data'),
 
@@ -302,7 +321,36 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                             ->color('secondary'),
                     ])
                     ->modalSubmitActionLabel('Import'),
-                Action::make('Upload Penilaian Excel')
+
+            ])
+                ->label('Mitra')
+                ->icon('heroicon-o-user-group')
+                ->color('primary')
+                ->button(), // render as a button with dropdown
+
+            // Separate group for finalize toggle (or keep as a standalone action if you prefer)
+            ActionGroup::make([
+                Action::make('toggleFinalizeNilai')
+                    ->label(fn () => $this->record->is_scored ? 'Unfinalize Nilai' : 'Finalize Nilai')
+                    ->icon(fn () => $this->record->is_scored ? 'heroicon-o-lock-open' : 'heroicon-o-lock-closed')
+                    ->color(fn () => $this->record->is_scored ? 'gray' : 'danger')
+                    ->requiresConfirmation()
+                    ->visible(fn () => ! $this->record->is_scored || auth()->user()->can('survey.unfinalize'))
+                    ->action(function () {
+                        $survey = $this->record;
+                        if ($survey->is_scored && ! auth()->user()->hasRole('superadmin')) {
+                            Notification::make()->title('You do not have permission to unfinalize this survey.')->danger()->send();
+                            return;
+                        }
+                        $survey->is_scored = ! $survey->is_scored;
+                        $survey->save();
+
+                        Notification::make()
+                            ->title($survey->is_scored ? 'Survey finalized!' : 'Finalization cancelled!')
+                            ->success()
+                            ->send();
+                    }),
+                    Action::make('Upload Penilaian Excel')
                     ->label('Upload Penilaian Excel')
                     ->icon('heroicon-o-arrow-up-tray')
                     ->form([
@@ -345,34 +393,6 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                             ->color('secondary'),
                     ])
                     ->modalSubmitActionLabel('Import')
-            ])
-                ->label('Mitra')
-                ->icon('heroicon-o-user-group')
-                ->color('primary')
-                ->button(), // render as a button with dropdown
-
-            // Separate group for finalize toggle (or keep as a standalone action if you prefer)
-            ActionGroup::make([
-                Action::make('toggleFinalizeNilai')
-                    ->label(fn () => $this->record->is_scored ? 'Unfinalize Nilai' : 'Finalize Nilai')
-                    ->icon(fn () => $this->record->is_scored ? 'heroicon-o-lock-open' : 'heroicon-o-lock-closed')
-                    ->color(fn () => $this->record->is_scored ? 'gray' : 'danger')
-                    ->requiresConfirmation()
-                    ->visible(fn () => ! $this->record->is_scored || auth()->user()->can('survey.unfinalize'))
-                    ->action(function () {
-                        $survey = $this->record;
-                        if ($survey->is_scored && ! auth()->user()->hasRole('superadmin')) {
-                            Notification::make()->title('You do not have permission to unfinalize this survey.')->danger()->send();
-                            return;
-                        }
-                        $survey->is_scored = ! $survey->is_scored;
-                        $survey->save();
-
-                        Notification::make()
-                            ->title($survey->is_scored ? 'Survey finalized!' : 'Finalization cancelled!')
-                            ->success()
-                            ->send();
-                    }),
             ])
                 ->label('Nilai')
                 ->icon('heroicon-o-lock-closed')
