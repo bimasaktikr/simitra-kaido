@@ -16,6 +16,7 @@ use Filament\Support\Facades\Filament;
 use Filament\Forms\Contracts\HasForms;                 // ✅ add
 use Filament\Forms\Concerns\InteractsWithForms;       // ✅ add
 use Filament\Forms\Get;
+use Filament\Support\Exceptions\Halt;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Table;
@@ -115,80 +116,6 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                 //     ->color(fn (Mitra $record) => $this->alreadyAssigned($record->id) ? 'success' : 'gray'),
                 ])
                 ->actions([
-                    // TableAction::make('add')
-                    //     ->label('Add')
-                    //     ->icon('heroicon-o-plus')
-                    //     ->color('success')
-                    //     ->modalHeading(fn (Mitra $record) => 'Add Assignment: '.$record->name)
-                    //     ->modalSubmitActionLabel('Save Assignment')
-                    //     ->form([
-                    //         TextInput::make('target')
-                    //             ->label('Target')
-                    //             ->numeric()
-                    //             ->required()
-                    //             ->minValue(0),
-
-                    //         TextInput::make('rate')
-                    //             ->label('Rate (IDR)')
-                    //             ->numeric()
-                    //             ->required()
-                    //             ->disabled()
-                    //             ->default(fn () => $this->survey?->rate ?? 0)
-                    //             ->minValue(0),
-                    //     ])
-                    //     ->disabled(function (Mitra $record): bool {
-                    //         // 1) already in THIS survey?
-                    //         if ($this->alreadyAssigned($record->getKey())) {
-                    //             return true;
-                    //         }
-
-                    //         // 2) hit monthly cap?
-                    //         $cap = MaximalPayment::value(); // 0 = no cap
-                    //         if ($cap <= 0) {
-                    //             return false;
-                    //         }
-
-                    //         $paidThisMonth = (int) ($record->payment_this_month ?? 0); // from your query addSelect
-                    //         return $paidThisMonth >= $cap;
-                    //     })
-                    //     ->disabledTooltip(function (Mitra $record): ?string {
-                    //         if ($this->alreadyAssigned($record->getKey())) {
-                    //             return 'Mitra sudah ditugaskan di survei ini.';
-                    //         }
-                    //         $cap = MaximalPayment::value();
-                    //         if ($cap > 0) {
-                    //             $paid = (int) ($record->payment_this_month ?? 0);
-                    //             if ($paid >= $cap) {
-                    //                 return 'Batas pembayaran bulanan sudah tercapai.';
-                    //             }
-                    //         }
-                    //         return null; // no tooltip if enabled
-                    //     })
-                    //     ->action(function (Mitra $record, array $data) {
-                    //         // guard (race-condition safe)
-                    //         if ($this->alreadyAssigned($record->getKey())) {
-                    //             Notification::make()
-                    //                 ->title('Mitra sudah ada di survei ini.')
-                    //                 ->warning()
-                    //                 ->send();
-                    //             return;
-                    //         }
-
-                    //         Transaction::create([
-                    //             'survey_id' => $this->surveyId,
-                    //             'mitra_id'  => $record->getKey(),      // works even if PK isn't "id"
-                    //             'target'    => (int) ($data['target'] ?? 0),
-                    //             'rate'      => (float) ($data['rate'] ?? ($this->survey?->rate ?? 0)),
-                    //         ]);
-
-                    //         Notification::make()
-                    //             ->title('Mitra ditambahkan ke assignment.')
-                    //             ->success()
-                    //             ->send();
-
-                    //         // refresh parent table if you listen for this
-                    //         $this->dispatch('mitra-added');
-                    //     }),
                     TableAction::make('add')
                         ->label('Add')
                         ->icon('heroicon-o-plus')
@@ -252,42 +179,42 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                                             ->extraAttributes(['class' => 'gap-2']),
                                     ]),
 
-                                Grid::make(2) // inputs, still compact
-                                    ->schema([
-                                        TextInput::make('target')
-                                            ->label('Target')
-                                            ->numeric()
-                                            ->required()
-                                            ->minValue(0)
-                                            ->live(debounce: 300),
+                                        Grid::make(2) // inputs, still compact
+                                            ->schema([
+                                                TextInput::make('target')
+                                                    ->label('Target')
+                                                    ->numeric()
+                                                    ->required()
+                                                    ->minValue(0)
+                                                    ->live(debounce: 300),
 
-                                        TextInput::make('rate')
-                                            ->label('Rate (IDR)')
-                                            ->numeric()
-                                            ->required()
-                                            ->disabled()
-                                            ->default((int) ($this->survey?->rate ?? 0))
-                                            ->minValue(0)
-                                            ->live(debounce: 300),
-                                    ])
-                                    ->extraAttributes(['class' => 'gap-3 mt-1']),
+                                                TextInput::make('rate')
+                                                    ->label('Rate (IDR)')
+                                                    ->numeric()
+                                                    ->required()
+                                                    ->disabled()
+                                                    ->default((int) ($this->survey?->rate ?? 0))
+                                                    ->minValue(0)
+                                                    ->live(debounce: 300),
+                                            ])
+                                            ->extraAttributes(['class' => 'gap-3 mt-1']),
 
-                                Grid::make(2) // compact preview
-                                    ->schema([
-                                        Placeholder::make('projected_add')
-                                            ->label('Tambah')
-                                            ->inlineLabel()
-                                            ->content(fn (Get $get) => $fmt(((int) $get('target')) * ((int) $get('rate'))))
-                                            ->extraAttributes(['class' => 'text-xs text-gray-600']),
+                                        Grid::make(2) // compact preview
+                                            ->schema([
+                                                Placeholder::make('projected_add')
+                                                    ->label('Tambah')
+                                                    ->inlineLabel()
+                                                    ->content(fn (Get $get) => $fmt(((int) $get('target')) * ((int) $get('rate'))))
+                                                    ->extraAttributes(['class' => 'text-xs text-gray-600']),
 
-                                        Placeholder::make('projected_total')
-                                            ->label('Total')
-                                            ->inlineLabel()
-                                            ->content(fn (Get $get) => $fmt($current + (((int) $get('target')) * ((int) $get('rate')))))
-                                            ->extraAttributes(['class' => 'text-xs text-gray-600']),
-                                    ])
-                                    ->extraAttributes(['class' => 'gap-2 mt-1']),
-                            ];
+                                                Placeholder::make('projected_total')
+                                                    ->label('Total')
+                                                    ->inlineLabel()
+                                                    ->content(fn (Get $get) => $fmt($current + (((int) $get('target')) * ((int) $get('rate')))))
+                                                    ->extraAttributes(['class' => 'text-xs text-gray-600']),
+                                            ])
+                                            ->extraAttributes(['class' => 'gap-2 mt-1']),
+                                    ];
                         })
 
                         // ✅ Submit (race-condition safe): recheck against DB
@@ -321,7 +248,8 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                                     ->body('Sisa kuota bulan ini: Rp' . number_format($remaining, 0, ',', '.'))
                                     ->danger()
                                     ->send();
-                                return;
+                                // return;
+                                throw new Halt;
                             }
 
                             // 2) Create the transaction
