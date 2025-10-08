@@ -46,14 +46,20 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
 
     protected function getTableQuery(): Builder
     {
-        // return $this->record->mitras(); // assuming a relation exists
         return Transaction::query()
-                ->where('survey_id', $this->record->id)
-                ->with(['mitra', 'nilai'])
-                // ->whereHas('nilai') // Only include transactions with nilai
-                ->orderByDesc(
-                    DB::raw('(SELECT rerata FROM nilai1s WHERE nilai1s.transaction_id = transactions.id LIMIT 1)')
-                );
+            ->select('transactions.*')
+            // 👇 computed columns (no real DB columns needed)
+            ->selectRaw('(transactions.target * transactions.rate) AS payment')
+            ->selectRaw('(
+                SELECT n.rerata
+                FROM nilai1s AS n
+                WHERE n.transaction_id = transactions.id
+                LIMIT 1
+            ) AS rerata')
+            ->with(['mitra', 'nilai'])
+            ->where('survey_id', $this->record->id)
+            // Sort by the alias we just selected:
+            ->orderByDesc('rerata');
     }
 
 
@@ -399,5 +405,4 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                 ->button(),
         ];
     }
-
 }
