@@ -3,10 +3,10 @@
         BADAN PUSAT STATISTIK KOTA MALANG
     </div>
     <div style="font-size: 11px; margin-bottom: 3px;">
-        Jl. Jend. A. Yani Utara No.1, Blimbing, Kota Malang, Jawa Timur 65126
+        Jl. Janti Bar. No.47, Bandungrejosari, Kec. Sukun, Kota Malang, Jawa Timur 65148
     </div>
     <div style="font-size: 11px; margin-bottom: 3px;">
-        Telepon: (0341) 491096 | Email: bps3573@bps.go.id
+        Telepon: (0341) 801164 | Email: bps3573@bps.go.id
     </div>
     <div style="font-size: 11px;">
         Website: https://malangkota.bps.go.id
