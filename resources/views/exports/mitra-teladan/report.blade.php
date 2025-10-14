@@ -105,6 +105,37 @@
             color: #666;
             text-align: center;
         }
+
+        /* Styles untuk nilai2-report */
+        table.nilai2-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10px;
+        }
+        
+        table.nilai2-table th,
+        table.nilai2-table td {
+            border: 1px solid #333;
+            padding: 4px 6px;
+            text-align: left;
+            word-break: break-word;
+        }
+        
+        table.nilai2-table th {
+            background-color: #e0e0e0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border-left: 4px solid #333;
+        }
     </style>
 </head>
 <body>
@@ -164,10 +195,10 @@
     {{-- PAGE BREAK --}}
     <div class="page-break"></div>
     
-    {{-- HALAMAN 2+: LAMPIRAN --}}
+    {{-- LAMPIRAN 1: DETAIL TOP 5 MITRA --}}
     <div class="lampiran-title">
-        LAMPIRAN<br>
-        DETAIL PENILAIAN MITRA TELADAN Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
+        LAMPIRAN I<br>
+        DETAIL PENILAIAN TOP 5 MITRA TELADAN Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
     </div>
     
     @foreach($topMitra as $index => $mt)
@@ -207,6 +238,94 @@
             <div style="margin: 30px 0; border-bottom: 1px dashed #ccc;"></div>
         @endif
     @endforeach
+
+    {{-- PAGE BREAK --}}
+    <div class="page-break"></div>
+
+    {{-- LAMPIRAN 2: DETAIL PENILAIAN SEMUA MITRA (nilai2-report) --}}
+    <div class="lampiran-title">
+        LAMPIRAN II<br>
+        DETAIL PENILAIAN SELURUH MITRA TELADAN Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
+    </div>
+
+    @if(isset($reportData) && count($reportData))
+        @foreach ($reportData as $i => $group)
+            @if($i > 0)
+                <div class="page-break"></div>
+            @endif
+            
+            <div class="section-title">
+                {{ $group['mitraName'] }} - {{ $group['teamName'] }}
+            </div>
+            
+            <table class="nilai2-table">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Nama Pegawai</th>
+                        @for ($j = 1; $j <= 10; $j++)
+                            <th style="width: 8.5%;">{{ $j }}. {{ $aspekDescriptions[$j] ?? 'Aspek '.$j }}</th>
+                        @endfor
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($group['nilai2List'] as $row)
+                        <tr>
+                            <td>{{ $row['employeeName'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek1'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek2'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek3'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek4'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek5'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek6'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek7'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek8'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek9'] }}</td>
+                            <td style="text-align: center;">{{ $row['aspek10'] }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="11" style="text-align:center; font-style: italic; color: #666;">
+                                Tidak ada data penilaian
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        @endforeach
+
+        {{-- Ranking Semua Mitra --}}
+        @if(isset($mitraRanking) && count($mitraRanking))
+            <div class="page-break"></div>
+            
+            <div class="lampiran-title">
+                RANKING KESELURUHAN MITRA TELADAN<br>
+                Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
+            </div>
+            
+            <table class="main-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">Peringkat</th>
+                        <th style="width: 60%;">Nama Mitra</th>
+                        <th style="width: 30%;">Rata-rata Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($mitraRanking as $row)
+                        <tr @if($row['rank'] <= 5) style="background:#d1fae5;font-weight:bold" @endif>
+                            <td style="text-align: center;">{{ $row['rank'] }}</td>
+                            <td>{{ $row['mitraName'] }}</td>
+                            <td style="text-align: center;">{{ $row['avgRerata'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+    @else
+        <p style="text-align: center; margin: 30px 0; color: #666; font-style: italic;">
+            Data penilaian detail tidak tersedia
+        </p>
+    @endif
     
     <div class="footer-note" style="margin-top: 50px;">
         --- Akhir Dokumen ---

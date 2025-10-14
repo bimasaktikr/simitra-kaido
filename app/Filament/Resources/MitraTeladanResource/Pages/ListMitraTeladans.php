@@ -4,6 +4,7 @@ namespace App\Filament\Resources\MitraTeladanResource\Pages;
 
 use App\Filament\Resources\MitraTeladanResource;
 use App\Services\MitraTeladanReportService;
+use App\Services\Nilai2Service;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -54,8 +55,9 @@ class ListMitraTeladans extends ListRecords
     protected function generatePdfReport(int $year, int $quarter)
     {
         $service = new MitraTeladanReportService();
+        $nilai2Service = app(Nilai2Service::class);
         
-        // Get data
+        // Get top 5 mitra data
         $topMitra = $service->getTopMitra($year, $quarter);
         
         if ($topMitra->isEmpty()) {
@@ -68,11 +70,35 @@ class ListMitraTeladans extends ListRecords
             return null;
         }
         
-        // Get details for each mitra
+        // Check if all Mitra Teladan are finalized
+        $allFinalized = \App\Models\MitraTeladan::where('year', $year)
+            ->where('quarter', $quarter)
+            ->where(function($q) {
+                $q->whereNull('status_phase_2')->orWhere('status_phase_2', '!=', 1);
+            })
+            ->count() === 0;
+            
+        if (!$allFinalized) {
+            Notification::make()
+                ->warning()
+                ->title('Data Belum Final')
+                ->body("Masih ada Mitra Teladan yang belum difinalisasi untuk Q{$quarter} {$year}")
+                ->send();
+            
+            return null;
+        }
+        
+        // Get details for top 5 mitra
         $mitraDetails = [];
         foreach ($topMitra as $mt) {
             $mitraDetails[$mt->id] = $service->getMitraDetail($mt->id);
         }
+        
+        // Get nilai2 report data (all mitra)
+        $nilai2Report = $nilai2Service->getReportData($year, $quarter);
+        $reportData = $nilai2Report['data'];
+        $aspekDescriptions = $nilai2Report['aspekDescriptions'];
+        $mitraRanking = $nilai2Report['mitraRanking'];
         
         // Generate PDF
         $pdf = Pdf::loadView('exports.mitra-teladan.report', [
@@ -80,6 +106,10 @@ class ListMitraTeladans extends ListRecords
             'mitraDetails' => $mitraDetails,
             'metadata' => $service->getReportMetadata($year, $quarter),
             'signatory' => $service->getSignatory(),
+            // Tambahan data untuk lampiran nilai2-report
+            'reportData' => $reportData,
+            'aspekDescriptions' => $aspekDescriptions,
+            'mitraRanking' => $mitraRanking,
         ]);
         
         // Set paper size and orientation
@@ -97,7 +127,7 @@ class ListMitraTeladans extends ListRecords
         Notification::make()
             ->success()
             ->title('PDF Berhasil Dibuat')
-            ->body("Laporan Mitra Teladan Q{$quarter} {$year}")
+            ->body("Laporan Mitra Teladan Q{$quarter} {$year} dengan lampiran lengkap")
             ->send();
         
         // Return download response
