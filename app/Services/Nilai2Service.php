@@ -183,4 +183,155 @@ class Nilai2Service
             'mitraRanking' => $mitraRanking,
         ];
     }
+
+        /**
+     * Get top 5 Mitra Teladan with detailed info for official document
+     */
+    public function getTopMitraForDocument(int $year, int $quarter, ?int $teamId = null, int $limit = 5)
+    {
+        $query = MitraTeladan::with(['mitra', 'team', 'nilai2'])
+            ->where('year', $year)
+            ->where('quarter', $quarter)
+            ->where('status_phase_2', true); // Only finalized
+
+        if ($teamId) {
+            $query->where('team_id', $teamId);
+        }
+
+        $mitras = $query->get();
+
+        // Calculate total average (avg_rating_1 + avg_rating_2) / 2
+        $ranked = $mitras->map(function ($mt) {
+            $totalAvg = (($mt->avg_rating_1 ?? 0) + ($mt->avg_rating_2 ?? 0)) / 2;
+            return [
+                'mitra_teladan_id' => $mt->id,
+                'mitra_name' => $mt->mitra->name ?? '-',
+                'team_name' => $mt->team->name ?? '-',
+                'avg_rating_1' => $mt->avg_rating_1,
+                'avg_rating_2' => $mt->avg_rating_2,
+                'total_average' => round($totalAvg, 2),
+                'surveys_count' => $mt->surveys_count,
+                'nilai2_count' => $mt->nilai2->count(),
+            ];
+        });
+
+        // Sort by total_average descending
+        $sorted = $ranked->sortByDesc('total_average')->values();
+
+        // Add ranking number
+        return $sorted->take($limit)->map(function ($item, $index) {
+            $item['rank'] = $index + 1;
+            return $item;
+        });
+    }
+
+    /**
+     * Get detailed breakdown per aspek for lampiran document
+     */
+    public function getDetailedAspekBreakdown(int $mitraTeladanId)
+    {
+        $mitraTeladan = MitraTeladan::with(['mitra', 'nilai2.user'])->findOrFail($mitraTeladanId);
+
+        $nilai2List = $mitraTeladan->nilai2->where('is_final', true);
+
+        if ($nilai2List->isEmpty()) {
+            return null;
+        }
+
+        // Calculate average per aspek
+        $aspekAverages = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $aspekAverages["aspek{$i}"] = round($nilai2List->avg("aspek{$i}"), 2);
+        }
+
+        // Get individual scores
+        $individualScores = $nilai2List->map(function ($nilai2) {
+            return [
+                'penilai_name' => $nilai2->user->name ?? '-',
+                'aspek1' => $nilai2->aspek1,
+                'aspek2' => $nilai2->aspek2,
+                'aspek3' => $nilai2->aspek3,
+                'aspek4' => $nilai2->aspek4,
+                'aspek5' => $nilai2->aspek5,
+                'aspek6' => $nilai2->aspek6,
+                'aspek7' => $nilai2->aspek7,
+                'aspek8' => $nilai2->aspek8,
+                'aspek9' => $nilai2->aspek9,
+                'aspek10' => $nilai2->aspek10,
+                'rerata' => $nilai2->rerata,
+            ];
+        });
+
+        return [
+            'mitra_name' => $mitraTeladan->mitra->name ?? '-',
+            'team_name' => $mitraTeladan->team->name ?? '-',
+            'aspek_averages' => $aspekAverages,
+            'individual_scores' => $individualScores,
+            'total_penilai' => $nilai2List->count(),
+            'overall_average' => round($nilai2List->avg('rerata'), 2),
+        ];
+    }
+
+    /**
+     * Get data for official document export
+     */
+    public function getOfficialDocumentData(int $year, int $quarter, ?int $teamId = null)
+    {
+        // Get top 5 mitra
+        $topMitras = $this->getTopMitraForDocument($year, $quarter, $teamId, 5);
+
+        // Get detailed breakdown for each top mitra
+        $detailedBreakdowns = [];
+        foreach ($topMitras as $mitra) {
+            $breakdown = $this->getDetailedAspekBreakdown($mitra['mitra_teladan_id']);
+            if ($breakdown) {
+                $detailedBreakdowns[] = $breakdown;
+            }
+        }
+
+        return [
+            'top_mitras' => $topMitras,
+            'detailed_breakdowns' => $detailedBreakdowns,
+            'aspek_descriptions' => self::$aspekDescriptions,
+            'year' => $year,
+            'quarter' => $quarter,
+            'quarter_name' => $this->getQuarterName($quarter),
+        ];
+    }
+
+    /**
+     * Get quarter name in Indonesian
+     */
+    public function getQuarterName(int $quarter): string
+    {
+        return match($quarter) {
+            1 => 'I (Januari - Maret)',
+            2 => 'II (April - Juni)',
+            3 => 'III (Juli - September)',
+            4 => 'IV (Oktober - Desember)',
+            default => '-',
+        };
+    }
+
+    /**
+     * Check if all Mitra Teladan in period are finalized
+     */
+    public function checkAllFinalized(int $year, int $quarter, ?int $teamId = null): bool
+    {
+        $query = MitraTeladan::where('year', $year)
+            ->where('quarter', $quarter);
+
+        if ($teamId) {
+            $query->where('team_id', $teamId);
+        }
+
+        $total = $query->count();
+        if ($total === 0) {
+            return false; // No data
+        }
+
+        $finalized = $query->where('status_phase_2', true)->count();
+
+        return $total === $finalized;
+    }
 }
