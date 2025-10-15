@@ -197,30 +197,37 @@ class SurveyResource extends Resource
                         'done' => 'success',
                         default => 'secondary',
                     })
-                    // ->icon(fn (string $state): ?string => match ($state) {
-                    //     'done' => 'check-circle',
-                    //     'in progress' => 'clock',
-                    //     'not started' => 'circle',
-                    //     default => null,
-                    // })
                     ->sortable(),
             ])
             ->defaultSort(function (Builder $query): Builder {
+                // Urutkan berdasarkan triwulan terakhir terlebih dahulu, kemudian is_scored
                 return $query
-                    ->orderBy('is_scored')
-                    ->orderBy('triwulan', 'desc');
+                    ->orderByDesc('triwulan')
+                    ->orderByDesc('year')
+                    ->orderBy('is_scored');
             })
             ->filters([
-                //
+                // Filter berdasarkan quarter (triwulan)
+                Tables\Filters\SelectFilter::make('triwulan')
+                    ->label('Quarter')
+                    ->options([
+                        1 => 'Q1',
+                        2 => 'Q2',
+                        3 => 'Q3',
+                        4 => 'Q4',
+                    ]),
+                // Filter berdasarkan team
+                Tables\Filters\SelectFilter::make('team_id')
+                    ->label('Team')
+                    ->relationship('team', 'name'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\Action::make('view')
-                ->label('Detail')
-                ->icon('heroicon-o-eye')
-                ->url(fn ($record) => SurveyResource::getUrl('view-survey-detail', ['record' => $record])),
-
+                    ->label('Detail')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn ($record) => SurveyResource::getUrl('view-survey-detail', ['record' => $record])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
