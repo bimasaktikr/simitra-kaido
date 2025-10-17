@@ -7,55 +7,55 @@
         @page {
             margin: 2cm 2cm 2cm 2cm;
         }
-        
+
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12px;
             line-height: 1.6;
             color: #000;
         }
-        
+
         .page-break {
             page-break-after: always;
         }
-        
+
         h2 {
             text-align: center;
             font-size: 14px;
             margin: 20px 0;
             text-transform: uppercase;
         }
-        
+
         .intro {
             text-align: justify;
             margin: 20px 0;
         }
-        
+
         table.main-table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
         }
-        
+
         table.main-table th,
         table.main-table td {
             border: 1px solid #000;
             padding: 8px;
             text-align: left;
         }
-        
+
         table.main-table th {
             background-color: #f0f0f0;
             font-weight: bold;
             text-align: center;
         }
-        
+
         table.main-table td:first-child,
         table.main-table td:nth-child(4),
         table.main-table td:nth-child(5) {
             text-align: center;
         }
-        
+
         .lampiran-title {
             font-size: 13px;
             font-weight: bold;
@@ -63,42 +63,42 @@
             border-bottom: 2px solid #000;
             padding-bottom: 5px;
         }
-        
+
         .mitra-info {
             margin: 15px 0;
             padding: 10px;
             background-color: #f9f9f9;
             border-left: 4px solid #333;
         }
-        
+
         table.detail-table {
             width: 100%;
             border-collapse: collapse;
             margin: 15px 0;
         }
-        
+
         table.detail-table th,
         table.detail-table td {
             border: 1px solid #000;
             padding: 6px 10px;
         }
-        
+
         table.detail-table th {
             background-color: #e0e0e0;
             font-weight: bold;
             width: 70%;
         }
-        
+
         table.detail-table td {
             text-align: center;
             width: 30%;
         }
-        
+
         .summary-row {
             background-color: #f0f0f0;
             font-weight: bold;
         }
-        
+
         .footer-note {
             margin-top: 30px;
             font-size: 10px;
@@ -113,7 +113,7 @@
             margin: 15px 0;
             font-size: 10px;
         }
-        
+
         table.nilai2-table th,
         table.nilai2-table td {
             border: 1px solid #333;
@@ -121,7 +121,7 @@
             text-align: left;
             word-break: break-word;
         }
-        
+
         table.nilai2-table th {
             background-color: #e0e0e0;
             font-weight: bold;
@@ -141,21 +141,21 @@
 <body>
     {{-- HALAMAN 1: SURAT RESMI --}}
     @include('exports.mitra-teladan.header')
-    
+
     <h2>
         Pengumuman Mitra Teladan<br>
         Kuartal {{ $metadata['quarter_name'] }} Tahun {{ $metadata['year'] }}
     </h2>
-    
+
     <div class="intro">
         <p style="text-indent: 40px;">
             Berdasarkan hasil penilaian kinerja yang telah dilakukan melalui dua fase penilaian,
-            dengan ini diumumkan <strong>Mitra Teladan</strong> periode 
-            <strong>Kuartal {{ $metadata['quarter_name'] }} Tahun {{ $metadata['year'] }}</strong> 
+            dengan ini diumumkan <strong>Mitra Teladan</strong> periode
+            <strong>Kuartal {{ $metadata['quarter_name'] }} Tahun {{ $metadata['year'] }}</strong>
             sebagai berikut:
         </p>
     </div>
-    
+
     <table class="main-table">
         <thead>
             <tr>
@@ -178,41 +178,41 @@
             @endforeach
         </tbody>
     </table>
-    
+
     <div class="intro">
         <p style="text-indent: 40px;">
             Demikian pengumuman ini dibuat untuk dapat digunakan sebagaimana mestinya.
             Detail penilaian per aspek terlampir pada halaman berikutnya.
         </p>
     </div>
-    
+
     @include('exports.mitra-teladan.footer', ['signatory' => $signatory])
-    
+
     <div class="footer-note">
         Dokumen ini dibuat secara elektronik pada {{ $metadata['generated_at'] }} pukul {{ $metadata['generated_time'] }} WIB
     </div>
-    
+
     {{-- PAGE BREAK --}}
     <div class="page-break"></div>
-    
+
     {{-- LAMPIRAN 1: DETAIL TOP 5 MITRA --}}
     <div class="lampiran-title">
         LAMPIRAN I<br>
         DETAIL PENILAIAN TOP 5 MITRA TELADAN Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
     </div>
-    
+
     @foreach($topMitra as $index => $mt)
         @php
             $detail = $mitraDetails[$mt->id];
         @endphp
-        
+
         <div class="mitra-info">
             <strong>{{ $index + 1 }}. {{ $mt->mitra->name }}</strong><br>
-            Tim: {{ $mt->team->name }} | 
-            Periode: Q{{ $mt->quarter }} {{ $mt->year }} | 
+            Tim: {{ $mt->team->name }} |
+            Periode: Q{{ $mt->quarter }} {{ $mt->year }} |
             Total Penilai: {{ $detail['total_penilai'] }} pegawai
         </div>
-        
+
         <table class="detail-table">
             <thead>
                 <tr>
@@ -233,7 +233,7 @@
                 </tr>
             </tbody>
         </table>
-        
+
         @if(!$loop->last)
             <div style="margin: 30px 0; border-bottom: 1px dashed #ccc;"></div>
         @endif
@@ -253,11 +253,11 @@
             @if($i > 0)
                 <div class="page-break"></div>
             @endif
-            
+
             <div class="section-title">
                 {{ $group['mitraName'] }} - {{ $group['teamName'] }}
             </div>
-            
+
             <table class="nilai2-table">
                 <thead>
                     <tr>
@@ -296,12 +296,12 @@
         {{-- Ranking Semua Mitra --}}
         @if(isset($mitraRanking) && count($mitraRanking))
             <div class="page-break"></div>
-            
+
             <div class="lampiran-title">
                 RANKING KESELURUHAN MITRA TELADAN<br>
                 Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
             </div>
-            
+
             <table class="main-table">
                 <thead>
                     <tr>
@@ -326,7 +326,7 @@
             Data penilaian detail tidak tersedia
         </p>
     @endif
-    
+
     <div class="footer-note" style="margin-top: 50px;">
         --- Akhir Dokumen ---
     </div>
