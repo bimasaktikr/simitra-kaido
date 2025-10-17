@@ -47,6 +47,9 @@ class EmployeeNilai2Status extends Page implements HasTable
                         ->getStateUsing(function ($record) use ($team) {
                             $year = $this->tableFilters['selectedYear'] ?? now()->year;
                             $quarter = $this->tableFilters['selectedQuarter'] ?? ceil(now()->month / 3);
+
+                            $selectedStatus = $this->tableFilters['selectedStatus'] ?? null;
+
                             $mitraTeladan = MitraTeladan::where('team_id', $team->id)
                                 ->where('year', $year)
                                 ->where('quarter', $quarter)
@@ -55,7 +58,17 @@ class EmployeeNilai2Status extends Page implements HasTable
                                 $hasNilai2 = Nilai2::where('mitra_teladan_id', $mitraTeladan->id)
                                     ->where('user_id', $record->user_id)
                                     ->exists();
-                                return $hasNilai2 ? 'Sudah' : 'Belum';
+                                $status = $hasNilai2 ? 'Sudah' : 'Belum';
+
+                                // Apply custom logic for selectedStatus filter
+                                if ($selectedStatus) {
+                                    if ($status !== $selectedStatus) {
+                                        // Return null or a placeholder if not match --
+                                        // (will be excluded by filter when used with filter logic)
+                                        return null;
+                                    }
+                                }
+                                return $status;
                             }
                             return '-';
                         });
@@ -77,7 +90,7 @@ class EmployeeNilai2Status extends Page implements HasTable
                     ])
                     ->default(ceil(now()->month / 3)-1)
                     ->query(fn ($query) => $query),
-                SelectFilter::make('status')
+                SelectFilter::make('selectedStatus')
                     ->label('Status')
                     ->options([
                         'Sudah' => 'Sudah',
@@ -87,4 +100,6 @@ class EmployeeNilai2Status extends Page implements HasTable
                     ->query(fn ($query) => $query),
             ]);
     }
+
+
 }
