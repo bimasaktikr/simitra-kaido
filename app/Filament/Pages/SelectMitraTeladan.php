@@ -19,6 +19,8 @@ use App\Models\MitraTeladan;
 use Filament\Notifications\Notification;
 use App\Services\Nilai2Service;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+
 
 class SelectMitraTeladan extends Page implements HasForms
 {
@@ -73,11 +75,12 @@ class SelectMitraTeladan extends Page implements HasForms
 
     public function loadTopMitras(): void
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $canAcceptTeamIds = [];
-        if ($user->hasRole('super_admin')) {
+        // Replace hasRole with a check using the 'role' attribute or permissions
+        if (isset($user->role) && $user->role === 'super_admin') {
             $canAcceptTeamIds = \App\Models\Team::where('has_survey', true)->pluck('id')->toArray();
-        } elseif ($user->hasRole('ketua_tim') && $user->employee) {
+        } elseif (isset($user->role) && $user->role === 'ketua_tim' && $user->employee) {
             $canAcceptTeamIds = [$user->employee->team_id];
         }
         $this->canAcceptTeamIds = $canAcceptTeamIds;
@@ -86,7 +89,7 @@ class SelectMitraTeladan extends Page implements HasForms
         $quarter = $this->selectedQuarter;
         $mitraService = app(MitraService::class);
         $nilai2Service = app(Nilai2Service::class);
-        $userId = auth()->id();
+        $userId = Auth::user()->id;
 
         $teams = \App\Models\Team::where('has_survey', true)->get();
         $grouped = [];

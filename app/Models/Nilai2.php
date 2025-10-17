@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Nilai2 extends Model
 {
@@ -31,13 +32,13 @@ class Nilai2 extends Model
     // add hidden
     protected $hidden = ['created_at', 'updated_at'];
 
-    public function mitraTeladan()
+    public function mitraTeladan(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\MitraTeladan::class, 'mitra_teladan_id', 'id');
+        return $this->belongsTo(MitraTeladan::class, 'mitra_teladan_id', 'id');
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }

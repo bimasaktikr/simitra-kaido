@@ -73,6 +73,14 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, MustVerif
 
     public function employee()
     {
-        return $this->hasOne(\App\Models\Employee::class, 'user_id', 'id');
+        return $this->hasOne(Employee::class, 'user_id', 'id');
+    }
+    public function nilai2()
+    {
+        return $this->hasMany(Nilai2::class, 'user_id', 'id');
+    }
+    public function mitra()
+    {
+        return $this->hasOne(Mitra::class, 'user_id', 'id');
     }
 }
