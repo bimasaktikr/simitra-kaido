@@ -17,6 +17,7 @@
         "bezhansalleh/filament-shield": "^3.3",
         "dedoc/scramble": "^0.12.10",
         "dutchcodingcompany/filament-socialite": "^2.3",
+        "endroid/qr-code": "^6.0",
         "filament/filament": "^3.2",
         "filament/spatie-laravel-media-library-plugin": "^3.2",
         "filament/spatie-laravel-settings-plugin": "^3.2",

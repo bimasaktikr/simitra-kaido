@@ -27,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+        // Register Mitra Observer
+        \App\Models\Mitra::observe(\App\Observers\MitraObserver::class);
+        
         Gate::define('viewApiDocs', function (User $user) {
             return true;
         });

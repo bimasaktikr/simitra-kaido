@@ -28,7 +28,7 @@ Route::get('/surveys/{survey}/penilaian-template', function (Survey $survey) {
 })->name('survey.penilaian.template.download')->middleware(['auth']); // add guards as needed
 
 Route::get('/export-nilai2-report', [\App\Http\Controllers\SelectMitraTeladanExportController::class, 'export'])->name('export.nilai2.report');
-
+Route::get('/check/mitra/{uuid}', [PublicMitraController::class, 'show'])->name('cek.mitra');
 // Route::middleware(['auth', 'verified']) // Or adjust as needed
 //     ->get('/mitra-teladans', ListMitraTeladan::class)
 //     ->name('mitra-teladan');
