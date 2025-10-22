@@ -57,46 +57,77 @@
         }
         
         .lampiran-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
-            margin: 30px 0 15px 0;
+            margin: 0 0 20px 0;
+            text-align: center;
+            text-transform: uppercase;
             border-bottom: 2px solid #000;
-            padding-bottom: 5px;
+            padding-bottom: 10px;
         }
         
-        .mitra-info {
-            margin: 15px 0;
-            padding: 10px;
+        .mitra-header {
+            margin: 20px 0;
+            padding: 15px;
             background-color: #f9f9f9;
-            border-left: 4px solid #333;
+            border: 1px solid #333;
+        }
+        
+        .mitra-header h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .mitra-info-table {
+            width: 100%;
+            font-size: 11px;
+        }
+        
+        .mitra-info-table td {
+            padding: 5px;
+            border: none;
         }
         
         table.detail-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 20px 0;
         }
         
         table.detail-table th,
         table.detail-table td {
             border: 1px solid #000;
-            padding: 6px 10px;
+            padding: 10px;
         }
         
         table.detail-table th {
             background-color: #e0e0e0;
             font-weight: bold;
-            width: 70%;
+            width: 60%;
+            text-align: left;
         }
         
         table.detail-table td {
             text-align: center;
-            width: 30%;
+            width: 40%;
+            font-weight: bold;
         }
         
         .summary-row {
-            background-color: #f0f0f0;
-            font-weight: bold;
+            background-color: #d1fae5;
+        }
+        
+        .summary-row th {
+            background-color: #059669;
+            color: white;
+            text-align: center;
+        }
+        
+        .summary-row td {
+            background-color: #d1fae5;
+            font-size: 14px;
+            color: #059669;
         }
         
         .footer-note {
@@ -135,6 +166,10 @@
             padding: 5px 10px;
             background-color: #f0f0f0;
             border-left: 4px solid #333;
+        }
+
+        .individual-page {
+            min-height: 80vh;
         }
     </style>
 </head>
@@ -195,57 +230,77 @@
     {{-- PAGE BREAK --}}
     <div class="page-break"></div>
     
-    {{-- LAMPIRAN 1: DETAIL TOP 5 MITRA --}}
-    <div class="lampiran-title">
-        LAMPIRAN I<br>
-        DETAIL PENILAIAN TOP 5 MITRA TELADAN Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
-    </div>
-    
+    {{-- LAMPIRAN 1: DETAIL TOP 5 MITRA (SATU HALAMAN PER MITRA) --}}
     @foreach($topMitra as $index => $mt)
         @php
             $detail = $mitraDetails[$mt->id];
+            $ranking = $index + 1;
         @endphp
         
-        <div class="mitra-info">
-            <strong>{{ $index + 1 }}. {{ $mt->mitra->name }}</strong><br>
-            Tim: {{ $mt->team->name }} | 
-            Periode: Q{{ $mt->quarter }} {{ $mt->year }} | 
-            Total Penilai: {{ $detail['total_penilai'] }} pegawai
+        <div class="individual-page">
+            <div class="lampiran-title">
+                Lampiran {{ $ranking }}<br>
+                Detail Penilaian Mitra Teladan<br>
+                Peringkat {{ $ranking }} - Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
+            </div>
+            
+            {{-- Informasi Mitra Sederhana --}}
+            <div class="mitra-header">
+                <h3>{{ $mt->mitra->name }}</h3>
+                
+                <table class="mitra-info-table">
+                    <tr>
+                        <td style="width: 20%;"><strong>Tim:</strong></td>
+                        <td style="width: 30%;">{{ $mt->team->name }}</td>
+                        <td style="width: 20%;"><strong>Periode:</strong></td>
+                        <td style="width: 30%;">Q{{ $mt->quarter }} {{ $mt->year }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Penilai:</strong></td>
+                        <td>{{ $detail['total_penilai'] }} pegawai</td>
+                        <td><strong>Nilai Akhir:</strong></td>
+                        <td><strong>{{ number_format($mt->avg_rating_2, 2) }}</strong></td>
+                    </tr>
+                </table>
+            </div>
+            
+            {{-- Tabel Detail Penilaian --}}
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Aspek Penilaian (Fase 2)</th>
+                        <th>Rata-rata Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($detail['fase_2_aspek'] as $num => $aspekName)
+                    <tr>
+                        <th>{{ $num }}. {{ $aspekName }}</th>
+                        <td>{{ number_format($detail['aspek_averages'][$num] ?? 0, 2) }}</td>
+                    </tr>
+                    @endforeach
+                    <tr class="summary-row">
+                        <th>RATA-RATA KESELURUHAN</th>
+                        <td>{{ number_format($mt->avg_rating_2, 2) }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
         
-        <table class="detail-table">
-            <thead>
-                <tr>
-                    <th>Aspek Penilaian (Fase 2)</th>
-                    <th>Rata-rata Nilai</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($detail['fase_2_aspek'] as $num => $aspekName)
-                <tr>
-                    <td>{{ $num }}. {{ $aspekName }}</td>
-                    <td>{{ number_format($detail['aspek_averages'][$num] ?? 0, 2) }}</td>
-                </tr>
-                @endforeach
-                <tr class="summary-row">
-                    <td>RATA-RATA KESELURUHAN</td>
-                    <td>{{ number_format($mt->avg_rating_2, 2) }}</td>
-                </tr>
-            </tbody>
-        </table>
-        
+        {{-- Page break kecuali untuk item terakhir --}}
         @if(!$loop->last)
-            <div style="margin: 30px 0; border-bottom: 1px dashed #ccc;"></div>
+            <div class="page-break"></div>
         @endif
     @endforeach
 
-    {{-- PAGE BREAK --}}
+    {{-- PAGE BREAK sebelum lampiran 2 --}}
     <div class="page-break"></div>
 
     {{-- LAMPIRAN 2: DETAIL PENILAIAN SEMUA MITRA (nilai2-report) --}}
     <div class="lampiran-title">
-        LAMPIRAN II<br>
-        DETAIL PENILAIAN SELURUH MITRA TELADAN Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
+        Lampiran {{ count($topMitra) + 1 }}<br>
+        Detail Penilaian Seluruh Mitra Teladan<br>
+        Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
     </div>
 
     @if(isset($reportData) && count($reportData))
@@ -292,35 +347,6 @@
                 </tbody>
             </table>
         @endforeach
-
-        {{-- Ranking Semua Mitra --}}
-        @if(isset($mitraRanking) && count($mitraRanking))
-            <div class="page-break"></div>
-            
-            <div class="lampiran-title">
-                RANKING KESELURUHAN MITRA TELADAN<br>
-                Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
-            </div>
-            
-            <table class="main-table">
-                <thead>
-                    <tr>
-                        <th style="width: 10%;">Peringkat</th>
-                        <th style="width: 60%;">Nama Mitra</th>
-                        <th style="width: 30%;">Rata-rata Nilai</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($mitraRanking as $row)
-                        <tr @if($row['rank'] <= 5) style="background:#d1fae5;font-weight:bold" @endif>
-                            <td style="text-align: center;">{{ $row['rank'] }}</td>
-                            <td>{{ $row['mitraName'] }}</td>
-                            <td style="text-align: center;">{{ $row['avgRerata'] }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
     @else
         <p style="text-align: center; margin: 30px 0; color: #666; font-style: italic;">
             Data penilaian detail tidak tersedia
