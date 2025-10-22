@@ -102,7 +102,6 @@ class MitraTeladanResource extends Resource
             // 'index' => Pages\IndexMitraTeladan::route('/'),
             'create' => Pages\CreateMitraTeladan::route('/create'),
             'edit' => Pages\EditMitraTeladan::route('/{record}/edit'),
-
         ];
     }
 }

@@ -47,6 +47,7 @@ class EmployeeNilai2Status extends Page implements HasTable
                         ->getStateUsing(function ($record) use ($team) {
                             $year = $this->tableFilters['selectedYear'] ?? now()->year;
                             $quarter = $this->tableFilters['selectedQuarter'] ?? ceil(now()->month / 3);
+
                             $mitraTeladan = MitraTeladan::where('team_id', $team->id)
                                 ->where('year', $year)
                                 ->where('quarter', $quarter)
@@ -75,8 +76,18 @@ class EmployeeNilai2Status extends Page implements HasTable
                         3 => 'Q3',
                         4 => 'Q4',
                     ])
-                    ->default(ceil(now()->month / 3))
+                    ->default(ceil(now()->month / 3)-1)
+                    ->query(fn ($query) => $query),
+                SelectFilter::make('selectedStatus')
+                    ->label('Status')
+                    ->options([
+                        'Sudah' => 'Sudah',
+                        'Belum' => 'Belum',
+                    ])
+                    ->default('Belum')
                     ->query(fn ($query) => $query),
             ]);
     }
+
+
 }
