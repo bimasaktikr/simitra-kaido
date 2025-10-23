@@ -30,7 +30,7 @@ class Survey extends Model
     // add hidden
     protected $hidden = ['created_at', 'updated_at'];
 
-    public function transaction()
+    public function transactions()
     {
         return $this->hasMany(Transaction::class, 'survey_id', 'id');
     }

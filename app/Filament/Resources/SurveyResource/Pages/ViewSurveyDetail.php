@@ -328,6 +328,13 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                     ])
                     ->modalSubmitActionLabel('Import'),
 
+                Action::make('Export ID Card')
+                    ->label('Export ID Card')
+                    ->icon('heroicon-o-qr-code')
+                    ->color('info')
+                    ->url(fn () => route('survey.export.idcards', $this->record))
+                    ->openUrlInNewTab(),
+
             ])
                 ->label('Mitra')
                 ->icon('heroicon-o-user-group')
