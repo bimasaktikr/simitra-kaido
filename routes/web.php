@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Controllers\SelectMitraTeladanExportController;
-use App\Http\Controllers\PublicMitraController;
+use App\Http\Controllers\PublicTransactionController;
+use App\Http\Controllers\SurveyExportController;
 
 Route::get('/mitra/template/download', function () {
     $headers = [
@@ -26,10 +27,12 @@ Route::get('/mitra/template/download', function () {
 Route::get('/surveys/{survey}/penilaian-template', function (Survey $survey) {
     $filename = 'Penilaian_Template_'.$survey->code.'_'.$survey->year.'.xlsx';
     return Excel::download(new SurveyNilaiTemplateExport($survey->id), $filename);
-})->name('survey.penilaian.template.download')->middleware(['auth']); // add guards as needed
+})->name('survey.penilaian.template.download')->middleware(['auth']);
 
-Route::get('/export-nilai2-report', [\App\Http\Controllers\SelectMitraTeladanExportController::class, 'export'])->name('export.nilai2.report');
-Route::get('/check/mitra/{uuid}', [PublicMitraController::class, 'show'])->name('cek.mitra');
-// Route::middleware(['auth', 'verified']) // Or adjust as needed
-//     ->get('/mitra-teladans', ListMitraTeladan::class)
-//     ->name('mitra-teladan');
+Route::get('/export-nilai2-report', [SelectMitraTeladanExportController::class, 'export'])->name('export.nilai2.report');
+
+Route::get('/check/mitra/{uuid}', [PublicTransactionController::class, 'show'])->name('cek.mitra');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/surveys/{survey}/export/id-cards', [SurveyExportController::class, 'idCards'])->name('survey.export.idcards');
+});
