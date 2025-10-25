@@ -24,9 +24,11 @@ class DatabaseSeeder extends Seeder
         //call BookSeeder
         $this->call(
             [
+                TeamSeeder::class,
                 EmployeeSeeder::class,
                 PaymentSeeder::class,
-                TeamSeeder::class,
+                SurveyEventSeeder::class,
+                MasterSurveyTypeSeeder::class,  // Auto-populate master_surveys type column
                 // BookSeeder::class,
                 // PostSeeder::class,
                 // ContactSeeder::class,

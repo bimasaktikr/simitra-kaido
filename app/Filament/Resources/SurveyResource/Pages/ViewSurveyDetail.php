@@ -8,6 +8,7 @@ use App\Imports\SurveyTransactionImport;
 use App\Models\Survey;
 use App\Models\Transaction;
 use App\Services\MitraService;
+use App\Services\MLRecommendationService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\FileUpload;
@@ -356,6 +357,75 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                             ->success()
                             ->send();
                     }),
+                
+                Action::make('finalize_and_retrain')
+                    ->label('Finalize & Retrain ML')
+                    ->icon('heroicon-o-rocket-launch')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Finalize Survey & Trigger ML Retraining')
+                    ->modalDescription('This will:
+1. Mark survey as finalized (status = done)
+2. Sync survey data to PostgreSQL
+3. Trigger ML model retraining via Airflow
+4. Update ML recommendations for future surveys
+
+This process takes ~45-60 seconds.')
+                    ->modalSubmitActionLabel('Finalize & Retrain')
+                    ->visible(fn () => $this->record->status !== 'done' && $this->record->is_scored)
+                    ->action(function () {
+                        try {
+                            // Update status to done
+                            $this->record->update(['status' => 'done']);
+                            
+                            $mlService = new MLRecommendationService();
+                            
+                            // Step 1: Sync data to PostgreSQL
+                            $syncResult = $mlService->syncSurveyDataToPostgres($this->record->id);
+                            
+                            if (!$syncResult['success']) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Failed to sync data')
+                                    ->body($syncResult['message'])
+                                    ->send();
+                                return;
+                            }
+                            
+                            // Step 2: Trigger ML retraining
+                            $retrainResult = $mlService->triggerRetraining($this->record->id);
+                            
+                            if ($retrainResult['success']) {
+                                // Mark as synced
+                                $this->record->update(['is_synced' => true]);
+                                
+                                Notification::make()
+                                    ->success()
+                                    ->title('Survey Finalized & ML Retraining Started')
+                                    ->body("✅ Synced {$syncResult['records_synced']} records to PostgreSQL
+🚀 ML retraining triggered (DAG Run: {$retrainResult['dag_run_id']})
+⏱️ Estimated completion: 45-60 seconds
+
+Check Airflow UI for progress: http://localhost:8080")
+                                    ->duration(10000)
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->warning()
+                                    ->title('Data synced but ML retrain failed')
+                                    ->body($retrainResult['message'])
+                                    ->send();
+                            }
+                            
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Error during finalization')
+                                ->body($e->getMessage())
+                                ->send();
+                        }
+                    }),
+                    
                     Action::make('Upload Penilaian Excel')
                     ->label('Upload Penilaian Excel')
                     ->icon('heroicon-o-arrow-up-tray')

@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\SurveyResource\Pages;
 use App\Filament\Resources\SurveyResource\RelationManagers;
 use App\Models\Survey;
+use App\Services\MLRecommendationService;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\DatePicker;
@@ -13,12 +14,17 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\ViewField;
+use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Actions\Action;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -29,6 +35,8 @@ class SurveyResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static ?string $navigationGroup = 'Surveys';
+    
+    protected static ?int $navigationSort = 2;
 
 
     public static function getPermissionPrefixes(): array
@@ -58,6 +66,51 @@ class SurveyResource extends Resource
                                     ->relationship('masterSurvey', 'name')
                                     ->getOptionLabelFromRecordUsing(fn($record) => $record->name . ' (' . $record->code . ')')
                                     ->searchable()
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        if ($state) {
+                                            // Clear previous recommendations
+                                            $set('ml_recommendations', null);
+                                            $set('ml_recommendations_loaded', false);
+                                            
+                                            // Get survey type from master_survey
+                                            $masterSurvey = \App\Models\MasterSurvey::find($state);
+                                            
+                                            \Log::info("🎯 Create Survey - Master Survey Selected", [
+                                                'master_survey_id' => $state,
+                                                'master_survey_name' => $masterSurvey?->name,
+                                                'type' => $masterSurvey?->type
+                                            ]);
+                                            
+                                            if ($masterSurvey && $masterSurvey->type) {
+                                                $set('survey_type_detected', $masterSurvey->type);
+                                                
+                                                // Auto-fetch ML recommendations (silently)
+                                                try {
+                                                    $mlService = new MLRecommendationService();
+                                                    $result = $mlService->getRecommendations($masterSurvey->type, 20);
+                                                    
+                                                    \Log::info("📥 Create Survey - ML API Response", [
+                                                        'success' => $result['success'],
+                                                        'total' => $result['total'] ?? 0,
+                                                        'data_count' => count($result['data'] ?? []),
+                                                        'first_item' => !empty($result['data']) ? $result['data'][0] : null
+                                                    ]);
+                                                    
+                                                    if ($result['success'] && !empty($result['data'])) {
+                                                        $set('ml_recommendations', $result['data']);
+                                                        $set('ml_recommendations_loaded', true);
+                                                    }
+                                                } catch (\Exception $e) {
+                                                    \Log::error("🚨 Create Survey - ML API Error", [
+                                                        'error' => $e->getMessage(),
+                                                        'file' => $e->getFile(),
+                                                        'line' => $e->getLine()
+                                                    ]);
+                                                }
+                                            }
+                                        }
+                                    })
                                     ->createOptionForm([
                                         Forms\Components\TextInput::make('name')
                                             ->label('Nama Survey')
@@ -65,6 +118,14 @@ class SurveyResource extends Resource
                                         Forms\Components\TextInput::make('code')
                                             ->label('Kode Survey')
                                             ->required(),
+                                        Forms\Components\Select::make('type')
+                                            ->label('Survey Type')
+                                            ->options([
+                                                'Rumah Tangga' => 'Rumah Tangga',
+                                                'Perusahaan' => 'Perusahaan',
+                                            ])
+                                            ->required()
+                                            ->helperText('Required for ML recommendations'),
                                     ])
                                     ->required(),
                                 Select::make('team_id')
@@ -88,6 +149,70 @@ class SurveyResource extends Resource
                                     ->required(),
                             ])
                     ]),
+                
+                // ML Recommendations Section
+                Section::make('ML Recommended Mitras')
+                    ->description('Machine learning optimized mitra recommendations based on PSO algorithm')
+                    ->schema([
+                        Placeholder::make('ml_info')
+                            ->label('')
+                            ->content(function (callable $get) {
+                                $loaded = $get('ml_recommendations_loaded');
+                                $surveyType = $get('survey_type_detected');
+                                
+                                if ($loaded) {
+                                    return "✅ Recommendations loaded for: {$surveyType} | Sorted by ML Score (higher = better match)";
+                                } else {
+                                    return "⏳ Select a Master Survey to load ML recommendations automatically...";
+                                }
+                            })
+                            ->columnSpanFull(),
+                        
+                        \Filament\Forms\Components\Actions::make([
+                            \Filament\Forms\Components\Actions\Action::make('refresh_ml_recommendations')
+                                ->label('Refresh Recommendations')
+                                ->icon('heroicon-o-arrow-path')
+                                ->color('primary')
+                                ->action(function (callable $get, callable $set) {
+                                    $masterSurveyId = $get('master_survey_id');
+                                    
+                                    if (!$masterSurveyId) {
+                                        return;
+                                    }
+                                    
+                                    // Clear current recommendations
+                                    $set('ml_recommendations', null);
+                                    $set('ml_recommendations_loaded', false);
+                                    
+                                    // Reload recommendations
+                                    $masterSurvey = \App\Models\MasterSurvey::find($masterSurveyId);
+                                    
+                                    if (!$masterSurvey) {
+                                        return;
+                                    }
+                                    
+                                    $mlService = new \App\Services\MLRecommendationService();
+                                    $result = $mlService->getRecommendations($masterSurvey->type, 20);
+                                    
+                                    if ($result['success']) {
+                                        $set('ml_recommendations', $result['data']);
+                                        $set('ml_recommendations_loaded', true);
+                                        $set('survey_type_detected', $masterSurvey->type);
+                                    }
+                                })
+                                ->visible(fn (callable $get) => $get('ml_recommendations_loaded') === true)
+                        ])
+                        ->columnSpanFull(),
+                        
+                        ViewField::make('ml_recommendations')
+                            ->label('')
+                            ->view('filament.forms.components.ml-recommendations-table')
+                            ->columnSpanFull()
+                            ->visible(fn (callable $get) => $get('ml_recommendations_loaded') === true),
+                    ])
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->visible(fn ($operation) => $operation === 'create'),
 
                 Section::make('Pembayaran')
                     ->schema([

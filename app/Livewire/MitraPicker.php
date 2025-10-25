@@ -6,6 +6,7 @@ use App\Models\MaximalPayment;
 use App\Models\Mitra;
 use App\Models\Survey;
 use App\Models\Transaction;
+use App\Services\MLRecommendationService;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
@@ -13,8 +14,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Support\Facades\Filament;
-use Filament\Forms\Contracts\HasForms;                 // ✅ add
-use Filament\Forms\Concerns\InteractsWithForms;       // ✅ add
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Get;
 use Filament\Support\Exceptions\Halt;
 use Filament\Tables\Contracts\HasTable;
@@ -29,27 +30,106 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TernaryFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
-class MitraPicker extends Component implements HasTable, HasForms   // ✅ add HasForms
+class MitraPicker extends Component implements HasTable, HasForms
 {
     use InteractsWithTable;
-    use InteractsWithForms;                                       // ✅ add
+    use InteractsWithForms;
 
     public int $surveyId;
     public ?Survey $survey = null;
+    public array $mlRecommendations = [];
 
     public function mount(int $surveyId): void
     {
         $this->surveyId = $surveyId;
-        $this->survey   = Survey::find($surveyId);
+        $this->survey   = Survey::with('masterSurvey')->find($surveyId);
+        
+        // Fetch ML recommendations on mount
+        $this->fetchMLRecommendations();
     }
 
-    // // Satisfy translatable requirement
-    // public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
-    // {
-    //     return Filament::getCurrentPanel()?->makeTranslatableContentDriver($this);
-    // }
+    protected function fetchMLRecommendations(): void
+    {
+        if (!$this->survey) {
+            Log::warning("⚠️ Cannot fetch ML recommendations: Survey is null");
+            return;
+        }
+        
+        if (!$this->survey->masterSurvey) {
+            Log::warning("⚠️ Cannot fetch ML recommendations: MasterSurvey is null for survey {$this->surveyId}");
+            return;
+        }
+        
+        if (!$this->survey->masterSurvey->type) {
+            Log::warning("⚠️ Cannot fetch ML recommendations: Survey type is null for master_survey_id {$this->survey->master_survey_id}");
+            return;
+        }
+
+        $surveyType = $this->survey->masterSurvey->type;
+        
+        Log::info("🎯 Starting ML recommendations fetch", [
+            'survey_id' => $this->surveyId,
+            'master_survey_id' => $this->survey->master_survey_id,
+            'survey_type' => $surveyType,
+            'master_survey_name' => $this->survey->masterSurvey->name ?? 'N/A'
+        ]);
+
+        try {
+            $mlService = new MLRecommendationService();
+            $result = $mlService->getRecommendations($surveyType, 100);
+
+            Log::info("📡 API Response received", [
+                'success' => $result['success'],
+                'data_count' => count($result['data'] ?? []),
+                'message' => $result['message'] ?? 'No message'
+            ]);
+
+            if ($result['success'] && !empty($result['data'])) {
+                // Store FULL recommendation data with ALL parameters from API
+                $this->mlRecommendations = collect($result['data'])
+                    ->map(fn($rec, $index) => [
+                        'mitra_id' => $rec['mitra_id'],
+                        'final_rank_score' => (float) ($rec['final_rank_score'] ?? 0), // ML Score (main ranking score)
+                        'optimized_score' => (float) ($rec['optimized_score'] ?? 0), // Rating Mitra (PSO optimized)
+                        'survey_score' => (float) ($rec['survey_score'] ?? 0), // Average rating survey
+                        'jumlah_survey' => (int) ($rec['jumlah_survey'] ?? 0), // Total survey count
+                        'rank' => $index + 1, // Ranking position (1-based, sorted by API)
+                    ])
+                    ->keyBy('mitra_id')
+                    ->toArray();
+                    
+                Log::info("✅ Loaded " . count($this->mlRecommendations) . " ML recommendations", [
+                    'survey_id' => $this->surveyId,
+                    'survey_type' => $surveyType,
+                    'top_3' => array_slice(array_map(fn($id) => [
+                        'id' => $id,
+                        'rank' => $this->mlRecommendations[$id]['rank'],
+                        'final_rank_score' => $this->mlRecommendations[$id]['final_rank_score'],
+                        'optimized_score' => $this->mlRecommendations[$id]['optimized_score'],
+                        'survey_score' => $this->mlRecommendations[$id]['survey_score'],
+                        'jumlah_survey' => $this->mlRecommendations[$id]['jumlah_survey']
+                    ], array_keys($this->mlRecommendations)), 0, 3)
+                ]);
+            } else {
+                Log::warning("❌ Failed to load ML recommendations", [
+                    'success' => $result['success'],
+                    'message' => $result['message'] ?? 'No data',
+                    'survey_type' => $surveyType
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("🚨 ML Recommendations exception", [
+                'error' => $e->getMessage(),
+                'survey_id' => $this->surveyId,
+                'survey_type' => $surveyType,
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+        }
+    }
 
     public function getTranslatableLocales(): array
     {
@@ -61,6 +141,20 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
         return $table
             ->query($this->mitraQuery())
             ->columns([
+                TextColumn::make('final_rank_score')
+                    ->label('ML Score')
+                    ->numeric(decimalPlaces: 1)
+                    ->formatStateUsing(fn ($state) => $state !== null ? number_format($state * 100, 1) . '%' : '-')
+                    ->badge()
+                    ->color(fn ($state) => match(true) {
+                        $state >= 0.8 => 'success',
+                        $state >= 0.6 => 'warning',
+                        default => 'gray'
+                    })
+                    ->sortable()
+                    ->description('ML Final Rank Score')
+                    ->tooltip('Higher score = Better predicted match'),
+                
                 TextColumn::make('name')
                     ->label('Nama')
                     ->searchable()
@@ -68,52 +162,55 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                     ->wrap()
                     ->description(fn (\App\Models\Mitra $record) => $record->email, position: 'below'),
 
+                TextColumn::make('optimized_score')
+                    ->label('Rating Mitra')
+                    ->formatStateUsing(fn ($state) => $state !== null && $state > 0 ? number_format((float) $state * 100, 1) . '%' : '-')
+                    ->description('PSO Optimized Score')
+                    ->sortable()
+                    ->badge()
+                    ->color(fn ($state) => match(true) {
+                        $state >= 0.9 => 'success',
+                        $state >= 0.7 => 'warning',
+                        $state > 0 => 'gray',
+                        default => 'gray'
+                    }),
+
                 TextColumn::make('avg_rating')
-                    ->label('Average Rating')
-                    ->numeric(decimalPlaces: 2)
+                    ->label('Average Rating Survey')
                     ->formatStateUsing(function ($state, Mitra $record) {
-                        $fmt = fn ($v) => $v !== null ? number_format((float) $v, 2) : '-';
+                        // Use survey_score from API virtual column
+                        $apiScore = $record->api_survey_score ?? null;
+                        $fmt = fn ($v) => $v !== null && $v > 0 ? number_format((float) $v, 2) : '-';
+                        
+                        if ($apiScore !== null && $apiScore > 0) {
+                            return $fmt($apiScore) . ' / ' . $fmt($record->avg_rating_this_master);
+                        }
+                        
                         return $fmt($state) . ' / ' . $fmt($record->avg_rating_this_master);
                     })
-                    // ->formatStateUsing(fn ($state) => $state !== null ? number_format($state, 2) : '—')
+                    ->description('From Surveys / This Master')
                     ->sortable(),
 
-
                 TextColumn::make('surveys_count')
-                    ->label('Jumlah (All / Master)')
-                    ->formatStateUsing(fn ($state, Mitra $record) =>
-                        (int) $state . ' / ' . (int) ($record->worked_this_master ?? 0)
+                    ->label('Jumlah Survey')
+                    ->formatStateUsing(fn ($state, Mitra $record) => 
+                        // Use jumlah_survey from API virtual column
+                        ($record->api_jumlah_survey ?? $state) . 
+                        ' / ' . 
+                        (int) ($record->worked_this_master ?? 0)
                     )
-                    // sort by the “all” count (change to worked_this_master if you prefer)
+                    ->description('Total / This Master')
                     ->sortable(query: fn (Builder $query, string $direction) =>
                         $query->orderBy('surveys_count', $direction)
-                ),
+                    ),
 
                 TextColumn::make('payment_this_month')
                     ->label('Payment This Month')
                     ->formatStateUsing(function ($state, Mitra $record) {
-                        // Assume payment_this_month is eager loaded or calculated in the query
-                        // If not, you may need to calculate it here
-                        return $state !== null ? 'IDR ' . number_format($state, 0, ',', '.') : '-';
+                        return $state !== null ? 'IDR ' . number_format($state, 0, ',', '.') : 'IDR 0';
                     })
+                    ->description('Total rate bulan ini')
                     ->sortable(),
-                // TextColumn::make('worked_this_master') // this is the alias from withCount()
-                //     ->label('Pernah di Master ini?')
-                //     ->formatStateUsing(fn ($state) => (int) $state > 0 ? 'Pernah' : 'Belum')
-                //     ->badge()
-                //     ->color(fn ($state) => (int) $state > 0 ? 'success' : 'gray')
-                //     ->sortable(
-                //         query: fn (Builder $query, string $direction) =>
-                //             $query->orderBy('worked_this_master', $direction)
-                //     ),
-
-                // TextColumn::make('status_badge')
-                //     ->label('Status')
-                //     ->formatStateUsing(fn (Mitra $record) =>
-                //         $this->alreadyAssigned($record->id) ? 'Sudah ditugaskan' : 'Belum'
-                //     )
-                //     ->badge()
-                //     ->color(fn (Mitra $record) => $this->alreadyAssigned($record->id) ? 'success' : 'gray'),
                 ])
                 ->actions([
                     TableAction::make('add')
@@ -199,57 +296,77 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                                             ])
                                             ->extraAttributes(['class' => 'gap-3 mt-1']),
 
-                                        Grid::make(2) // compact preview
+                                        // Mini totals box
+                                        Section::make()
+                                            ->compact()
                                             ->schema([
-                                                Placeholder::make('projected_add')
+                                                Placeholder::make('tambah_display')
                                                     ->label('Tambah')
                                                     ->inlineLabel()
-                                                    ->content(fn (Get $get) => $fmt(((int) $get('target')) * ((int) $get('rate'))))
+                                                    ->content(function (Get $get) use ($fmt): string {
+                                                        $target = (int) ($get('target') ?? 0);
+                                                        $rate   = (int) ($get('rate') ?? 0);
+                                                        return $fmt($target * $rate);
+                                                    })
                                                     ->extraAttributes(['class' => 'text-xs text-gray-600']),
 
-                                                Placeholder::make('projected_total')
+                                                Placeholder::make('total_display')
                                                     ->label('Total')
                                                     ->inlineLabel()
-                                                    ->content(fn (Get $get) => $fmt($current + (((int) $get('target')) * ((int) $get('rate')))))
+                                                    ->content(function (Get $get) use ($current, $fmt): string {
+                                                        $target = (int) ($get('target') ?? 0);
+                                                        $rate   = (int) ($get('rate') ?? 0);
+                                                        return $fmt($current + ($target * $rate));
+                                                    })
+                                                    ->extraAttributes(['class' => 'text-xs text-gray-600']),
+
+                                                Placeholder::make('sisa_display')
+                                                    ->label('Sisa')
+                                                    ->inlineLabel()
+                                                    ->content(function (Get $get) use ($current, $cap, $fmt): string {
+                                                        if ($cap <= 0) return '—';
+                                                        $target = (int) ($get('target') ?? 0);
+                                                        $rate   = (int) ($get('rate') ?? 0);
+                                                        $new = $current + ($target * $rate);
+                                                        return $fmt(max(0, $cap - $new));
+                                                    })
                                                     ->extraAttributes(['class' => 'text-xs text-gray-600']),
                                             ])
-                                            ->extraAttributes(['class' => 'gap-2 mt-1']),
-                                    ];
+                                            ->extraAttributes(['class' => 'mt-1']),
+                            ];
                         })
 
-                        // ✅ Submit (race-condition safe): recheck against DB
+                        // ✅ Process + validation
                         ->action(function (Mitra $record, array $data) {
-                            // 1) Prevent duplicate in this survey
-                            if ($this->alreadyAssigned($record->getKey())) {
-                                Notification::make()->title('Mitra sudah ada di survei ini.')->warning()->send();
-                                return;
+                            $target = (int) ($data['target'] ?? 0);
+                            $rate   = (int) ($data['rate'] ?? 0);
+
+                            if ($target <= 0 || $rate <= 0) {
+                                Notification::make()->title('Target dan rate harus > 0')->danger()->send();
+                                throw new Halt;
                             }
 
-                            $cap   = MaximalPayment::value(); // 0 => no cap
-                            $month = (int) $this->survey->payment_month;
-                            $year  = (int) $this->survey->year;
+                            $cap = MaximalPayment::value();
+                            if ($cap > 0) {
+                                $month  = (int) $this->survey->payment_month;
+                                $year   = (int) $this->survey->year;
 
-                            $current = (int) DB::table('transactions')
-                                ->join('surveys', 'surveys.id', '=', 'transactions.survey_id')
-                                ->where('transactions.mitra_id', $record->getKey())
-                                ->where('surveys.payment_month', $month)
-                                ->where('surveys.year', $year)
-                                ->selectRaw('COALESCE(SUM(transactions.target * transactions.rate), 0) AS total')
-                                ->value('total');
+                                $current = (int) DB::table('transactions')
+                                    ->join('surveys', 'surveys.id', '=', 'transactions.survey_id')
+                                    ->where('transactions.mitra_id', $record->getKey())
+                                    ->where('surveys.payment_month', $month)
+                                    ->where('surveys.year', $year)
+                                    ->selectRaw('COALESCE(SUM(transactions.target * transactions.rate), 0) AS total')
+                                    ->value('total');
 
-                            $target = (int) ($data['target'] ?? 0);
-                            $rate   = (int) ($data['rate'] ?? ($this->survey?->rate ?? 0));
-                            $added  = $target * $rate;
-
-                            if ($cap > 0 && ($current + $added) > $cap) {
-                                $remaining = max(0, $cap - $current);
-                                Notification::make()
-                                    ->title('Melebihi batas pembayaran bulanan')
-                                    ->body('Sisa kuota bulan ini: Rp' . number_format($remaining, 0, ',', '.'))
-                                    ->danger()
-                                    ->send();
-                                // return;
-                                throw new Halt;
+                                $newTotal = $current + ($target * $rate);
+                                if ($newTotal > $cap) {
+                                    Notification::make()
+                                        ->title('Payment akan melebihi batas maksimal.')
+                                        ->danger()
+                                        ->send();
+                                    throw new Halt;
+                                }
                             }
 
                             // 2) Create the transaction
@@ -265,17 +382,6 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                         })
                 ])
             ->filters([
-                // ✅ In this survey? (Yes / No / Any)
-                // TernaryFilter::make('in_this_survey')
-                //     ->label('Di survei ini?')
-                //     ->trueLabel('Sudah')
-                //     ->falseLabel('Belum')
-                //     ->queries(
-                //         true: fn ($query)  => $query->having('in_this_survey', '>', 0),
-                //         false: fn ($query) => $query->having('in_this_survey', '=', 0),
-                //     ),
-
-                // ✅ Ever worked under the same master? (Yes / No / Any)
                 TernaryFilter::make('worked_this_master')
                     ->label('Pernah di master ini?')
                     ->trueLabel('Pernah')
@@ -285,7 +391,6 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                         false: fn ($query) => $query->having('worked_this_master', '=', 0),
                     ),
 
-                // ✅ Thresholds for averages (overall & master)
                 Filter::make('avg_thresholds')
                     ->label('Min Avg')
                     ->form([
@@ -314,24 +419,35 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                         return $chips;
                     }),
             ])
-            ->paginationPageOptions([10, 25, 50]);
+            ->paginationPageOptions([10, 25, 50])
+            ->defaultSort('final_rank_score', 'desc'); // Sort by ML final rank score by default
     }
 
     protected function mitraQuery(): Builder
     {
         $masterId = $this->survey->master_survey_id;
+        $month    = (int) $this->survey->payment_month;
+        $year     = $this->survey->year;
+        $mitraKey = (new Mitra())->getQualifiedKeyName();
 
-        $month      = (int) $this->survey->payment_month;   // 1..12
-        $year       = $this->survey->year;
+        $query = \App\Models\Mitra::query();
 
-        $mitraKey = (new Mitra())->getQualifiedKeyName(); // ✅ "mitras.id" or "mitras.id_sobat"
+        // 🎯 FILTER: Only show mitras from ML recommendations IF available
+        if (!empty($this->mlRecommendations)) {
+            $mitraIds = array_keys($this->mlRecommendations);
+            $query->whereIn('id', $mitraIds);
+            
+            Log::info("📋 Filtering to " . count($mitraIds) . " recommended mitras");
+        } else {
+            // If no ML recommendations, show all mitras (fallback mode)
+            Log::warning("⚠️ No ML recommendations available, showing all mitras");
+        }
 
-        return \App\Models\Mitra::query()
-            // average rating for THIS survey
-            // ->withAvg([
-            //     'nilai1s as avg_rating' => fn ($query) =>
-            //         $query->where('transactions.survey_id', $this->surveyId),
-            // ], 'rerata')
+        $query
+            // Rating Mitra: Overall average from nilai1s table
+            ->withAvg(['nilai1s as mitra_rating'], 'rerata')
+            
+            // Average Rating Survey: Per survey ratings
             ->withAvg(
                 [
                 'nilai1s as avg_rating',
@@ -340,16 +456,13 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                       ->where('surveys.master_survey_id', $masterId)
                 ], 'rerata')
 
-            // how many surveys ever (via transactions)
             ->withCount('surveys as surveys_count')
 
-            // worked under the SAME MASTER as current survey?
             ->withCount([
                 'surveys as worked_this_master' => fn ($query) =>
                     $query->where('surveys.master_survey_id', $masterId),
             ])
 
-            // has a transaction in THIS survey (fastest way)
             ->withCount([
                 'transactions as in_this_survey' => fn ($query) =>
                     $query->where('survey_id', $this->surveyId),
@@ -362,29 +475,63 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
                     ->when($year, fn ($q) => $q->where('surveys.year', $year))
                     ->whereColumn('transactions.mitra_id', $mitraKey),
             ]);
+
+        // Add ML scores and ranking as virtual columns
+        if (!empty($this->mlRecommendations)) {
+            // Build CASE statement for final_rank_score (ML Score column)
+            $finalRankCases = collect($this->mlRecommendations)
+                ->map(fn($data, $mitraId) => "WHEN {$mitraId} THEN {$data['final_rank_score']}")
+                ->join(' ');
+            
+            // Build CASE statement for optimized_score (Rating Mitra column)
+            $optimizedCases = collect($this->mlRecommendations)
+                ->map(fn($data, $mitraId) => "WHEN {$mitraId} THEN {$data['optimized_score']}")
+                ->join(' ');
+            
+            // Build CASE statement for rank
+            $rankCases = collect($this->mlRecommendations)
+                ->map(fn($data, $mitraId) => "WHEN {$mitraId} THEN {$data['rank']}")
+                ->join(' ');
+            
+            // Build CASE statement for survey_score
+            $surveyCases = collect($this->mlRecommendations)
+                ->map(fn($data, $mitraId) => "WHEN {$mitraId} THEN {$data['survey_score']}")
+                ->join(' ');
+            
+            // Build CASE statement for jumlah_survey
+            $countCases = collect($this->mlRecommendations)
+                ->map(fn($data, $mitraId) => "WHEN {$mitraId} THEN {$data['jumlah_survey']}")
+                ->join(' ');
+            
+            $query
+                ->addSelect(DB::raw("(CASE mitras.id {$finalRankCases} ELSE 0 END) as final_rank_score"))
+                ->addSelect(DB::raw("(CASE mitras.id {$optimizedCases} ELSE 0 END) as optimized_score"))
+                ->addSelect(DB::raw("(CASE mitras.id {$rankCases} ELSE 999 END) as ml_rank"))
+                ->addSelect(DB::raw("(CASE mitras.id {$surveyCases} ELSE 0 END) as api_survey_score"))
+                ->addSelect(DB::raw("(CASE mitras.id {$countCases} ELSE 0 END) as api_jumlah_survey"))
+                ->orderByRaw("ml_rank ASC"); // Sort by API ranking
+                
+            Log::info("✅ Applied ML scoring with " . count($this->mlRecommendations) . " scores");
+        } else {
+            // Fallback: no ML scores, sort by overall rating
+            $query
+                ->addSelect(DB::raw("0 as final_rank_score"))
+                ->addSelect(DB::raw("0 as optimized_score"))
+                ->addSelect(DB::raw("999 as ml_rank"))
+                ->orderBy('mitra_rating', 'desc'); // Fallback sort by rating
+                
+            Log::info("⚠️ Fallback mode: sorting by mitra_rating");
+        }
+
+        return $query;
     }
 
     protected function alreadyAssigned(int $mitraId): bool
     {
-        $masterId = $this->survey?->master_survey_id;
-        if (! $masterId) {
-            return false;
-        }
-
-        // If Transaction has `survey()` relation:
         return \App\Models\Transaction::query()
             ->where('mitra_id', $mitraId)
-            ->whereHas('survey', fn ($query) => $query->where('master_survey_id', $masterId))
+            ->where('survey_id', $this->surveyId)
             ->exists();
-
-        // Or, if you prefer a JOIN (doesn't require the relation):
-        /*
-        return \App\Models\Transaction::query()
-            ->join('surveys', 'surveys.id', '=', 'transactions.survey_id')
-            ->where('transactions.mitra_id', $mitraId)
-            ->where('surveys.master_survey_id', $masterId)
-            ->exists();
-        */
     }
 
     public function render()
@@ -398,14 +545,14 @@ class MitraPicker extends Component implements HasTable, HasForms   // ✅ add H
             return 'Mitra sudah ditugaskan di survei ini.';
         }
 
-        $cap = \App\Models\MaximalPayment::value(); // 0 = no cap
+        $cap = \App\Models\MaximalPayment::value();
         if ($cap > 0) {
-            $paid = (int) ($record->payment_this_month ?? 0); // from your query addSelect
+            $paid = (int) ($record->payment_this_month ?? 0);
             if ($paid >= $cap) {
                 return 'Batas pembayaran bulanan sudah tercapai.';
             }
         }
 
-        return null; // no reason -> not disabled
+        return null;
     }
 }
