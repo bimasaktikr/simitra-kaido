@@ -135,14 +135,19 @@ class MLRecommendationService
     public function triggerRetraining(int $surveyId): array
     {
         try {
+            $url = "{$this->airflowUrl}/dags/master_mitra_survey/dagRuns";
+            
             Log::info("🔄 Triggering ML retraining", [
-                'survey_id' => $surveyId
+                'survey_id' => $surveyId,
+                'url' => $url
             ]);
 
             // Trigger Airflow DAG for retraining
+            // Note: $this->airflowUrl already includes /api/v1
             $response = Http::timeout(30)
-                ->withBasicAuth('', '') // No auth configured in Airflow
-                ->post("{$this->airflowUrl}/dags/master_mitra_survey/dagRuns", [
+                ->acceptJson()
+                ->contentType('application/json')
+                ->post($url, [
                     'conf' => [
                         'triggered_by' => 'survey_finalization',
                         'survey_id' => $surveyId,
@@ -234,7 +239,8 @@ class MLRecommendationService
     {
         try {
             Log::info("📤 Syncing survey data to PostgreSQL", [
-                'survey_id' => $surveyId
+                'survey_id' => $surveyId,
+                'api_url' => $this->apiUrl . '/sync/survey'
             ]);
 
             // Call API endpoint to sync data
@@ -245,11 +251,18 @@ class MLRecommendationService
                 ]);
 
             if ($response->successful()) {
-                Log::info("✅ Survey data synced to PostgreSQL");
+                $data = $response->json();
+                
+                Log::info("✅ Survey data synced to PostgreSQL", [
+                    'records_synced' => $data['records_synced'] ?? 0,
+                    'synced_at' => $data['synced_at'] ?? null
+                ]);
 
                 return [
                     'success' => true,
-                    'message' => 'Survey data synced successfully'
+                    'message' => $data['message'] ?? 'Survey data synced successfully',
+                    'records_synced' => $data['records_synced'] ?? 0,
+                    'synced_at' => $data['synced_at'] ?? null
                 ];
             }
 
@@ -265,7 +278,8 @@ class MLRecommendationService
 
         } catch (Exception $e) {
             Log::error("❌ Sync error", [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return [

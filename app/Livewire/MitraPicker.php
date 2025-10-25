@@ -339,7 +339,7 @@ class MitraPicker extends Component implements HasTable, HasForms
                         // ✅ Process + validation
                         ->action(function (Mitra $record, array $data) {
                             $target = (int) ($data['target'] ?? 0);
-                            $rate   = (int) ($data['rate'] ?? 0);
+                            $rate   = (int) ($data['rate'] ?? ($this->survey?->rate ?? 0));
 
                             if ($target <= 0 || $rate <= 0) {
                                 Notification::make()->title('Target dan rate harus > 0')->danger()->send();

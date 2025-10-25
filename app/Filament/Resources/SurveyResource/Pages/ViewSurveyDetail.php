@@ -149,12 +149,22 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                     return $data;
                 })
                 ->action(function ($record, $data) {
-                    $record->nilai->update([
-                        'aspek1' => $data['nilai']['aspek1'],
-                        'aspek2' => $data['nilai']['aspek2'],
-                        'aspek3' => $data['nilai']['aspek3'],
-                        'rerata' => $data['nilai']['rerata'],
-                    ]);
+                    // ✅ FIX: Cek apakah nilai exists, kalau tidak buat dulu
+                    if (!$record->nilai) {
+                        $record->nilai()->create([
+                            'aspek1' => $data['nilai']['aspek1'],
+                            'aspek2' => $data['nilai']['aspek2'],
+                            'aspek3' => $data['nilai']['aspek3'],
+                            'rerata' => $data['nilai']['rerata'],
+                        ]);
+                    } else {
+                        $record->nilai->update([
+                            'aspek1' => $data['nilai']['aspek1'],
+                            'aspek2' => $data['nilai']['aspek2'],
+                            'aspek3' => $data['nilai']['aspek3'],
+                            'rerata' => $data['nilai']['rerata'],
+                        ]);
+                    }
                 })
                 ->visible(fn () => !$this->record->is_scored), // disable edit if already finalized
         ];
