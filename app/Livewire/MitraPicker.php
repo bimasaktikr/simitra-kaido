@@ -162,19 +162,6 @@ class MitraPicker extends Component implements HasTable, HasForms
                     ->wrap()
                     ->description(fn (\App\Models\Mitra $record) => $record->email, position: 'below'),
 
-                TextColumn::make('optimized_score')
-                    ->label('Rating Mitra')
-                    ->formatStateUsing(fn ($state) => $state !== null && $state > 0 ? number_format((float) $state * 100, 1) . '%' : '-')
-                    ->description('PSO Optimized Score')
-                    ->sortable()
-                    ->badge()
-                    ->color(fn ($state) => match(true) {
-                        $state >= 0.9 => 'success',
-                        $state >= 0.7 => 'warning',
-                        $state > 0 => 'gray',
-                        default => 'gray'
-                    }),
-
                 TextColumn::make('avg_rating')
                     ->label('Average Rating Survey')
                     ->formatStateUsing(function ($state, Mitra $record) {

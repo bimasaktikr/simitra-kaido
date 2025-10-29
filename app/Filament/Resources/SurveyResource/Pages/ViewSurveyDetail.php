@@ -98,13 +98,13 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                         )
                 ),
             TextColumn::make('nilai.aspek1')
-                ->label('Kualitas Data'),
+                ->label('Aspek 1'),
 
             TextColumn::make('nilai.aspek2')
-                ->label('Ketepatan Waktu'),
+                ->label('Aspek 2'),
 
             TextColumn::make('nilai.aspek3')
-                ->label('Pemahaman Pengetahuan Kerja'),
+                ->label('Aspek 3'),
 
             TextColumn::make('nilai.rerata')
                 ->label('Rerata'),
@@ -409,15 +409,18 @@ This process takes ~45-60 seconds.')
                                 // Mark as synced
                                 $this->record->update(['is_synced' => true]);
                                 
+                                // NOTE: Cache refresh moved to Airflow webhook
+                                // Airflow DAG will automatically refresh cache after completion
+                                
                                 Notification::make()
                                     ->success()
                                     ->title('Survey Finalized & ML Retraining Started')
                                     ->body("✅ Synced {$syncResult['records_synced']} records to PostgreSQL
-🚀 ML retraining triggered (DAG Run: {$retrainResult['dag_run_id']})
-⏱️ Estimated completion: 45-60 seconds
+🚀 ML retraining DAG triggered: {$retrainResult['dag_run_id']}
+⏳ Cache will auto-refresh after DAG completion (~1-2 minutes)
 
-Check Airflow UI for progress: http://localhost:8080")
-                                    ->duration(10000)
+Monitor progress at: http://localhost:8080")
+                                    ->persistent()
                                     ->send();
                             } else {
                                 Notification::make()

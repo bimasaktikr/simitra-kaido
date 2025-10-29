@@ -29,6 +29,16 @@ class SurveyObserver
                 'transactions_count' => $survey->transaction()->count(),
             ]);
 
+            // Step 0: Sync master survey types from PostgreSQL to ensure accuracy
+            try {
+                \Artisan::call('ml:sync-master-survey-types');
+                Log::info("✅ Master survey types synced from ML backend");
+            } catch (\Exception $e) {
+                Log::warning("⚠️ Could not sync master survey types", [
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             // Step 1: Sync survey data to PostgreSQL
             $syncResult = $this->mlService->syncSurveyDataToPostgres($survey->id);
 
@@ -48,7 +58,12 @@ class SurveyObserver
                     Log::info("✅ ML retraining triggered successfully", [
                         'survey_id' => $survey->id,
                         'dag_run_id' => $retrainingResult['dag_run_id'] ?? null,
+                        'note' => 'Cache will auto-refresh after DAG completion via webhook'
                     ]);
+
+                    // NOTE: Cache refresh moved to Airflow webhook
+                    // Airflow DAG will call /api/webhooks/ml-training-complete after completion
+                    // which will trigger cache refresh automatically
                 } else {
                     Log::error("❌ Failed to trigger ML retraining", [
                         'survey_id' => $survey->id,

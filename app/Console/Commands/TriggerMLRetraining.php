@@ -117,6 +117,16 @@ class TriggerMLRetraining extends Command
             return 0;
         }
 
+        // Step 0: Sync master survey types from ML backend
+        $this->line("🔄 Step 0: Syncing master survey types from ML backend...");
+        try {
+            \Artisan::call('ml:sync-master-survey-types');
+            $this->info("✅ Master survey types synced");
+        } catch (\Exception $e) {
+            $this->warn("⚠️ Could not sync master survey types: " . $e->getMessage());
+        }
+        $this->newLine();
+
         // Step 1: Sync to PostgreSQL
         $this->line("📤 Step 1: Syncing survey data to PostgreSQL...");
         $syncResult = $this->syncToPostgres($surveyId);
@@ -145,6 +155,12 @@ class TriggerMLRetraining extends Command
         $this->info("   ✅ DAG triggered successfully!");
         $this->line("   DAG ID: master_mitra_survey");
         $this->line("   Run ID: " . ($dagResult['run_id'] ?? 'N/A'));
+        $this->newLine();
+
+        // Step 3: Wait for DAG completion (auto cache refresh via webhook)
+        $this->line("⏳ Step 3: Waiting for DAG completion...");
+        $this->line("   ℹ️  DAG will automatically refresh cache when completed");
+        $this->line("   ℹ️  Airflow will notify Laravel via webhook after training");
         $this->newLine();
 
         // Update survey is_synced flag
