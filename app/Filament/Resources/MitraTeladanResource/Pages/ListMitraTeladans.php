@@ -10,6 +10,8 @@ use Filament\Resources\Pages\ListRecords;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class ListMitraTeladans extends ListRecords
 {
@@ -80,7 +82,7 @@ class ListMitraTeladans extends ListRecords
                         ->required(),
                 ])
                 ->action(function (array $data) {
-                    return $this->generateCertificatesPdf(
+                    return $this->generateCertificatesZip(
                         $data["year"],
                         $data["quarter"],
                     );
@@ -174,7 +176,7 @@ class ListMitraTeladans extends ListRecords
         }, $filename);
     }
 
-    protected function generateCertificatesPdf(int $year, int $quarter)
+    protected function generateCertificatesZip(int $year, int $quarter)
     {
         $service = new MitraTeladanReportService();
 
@@ -216,42 +218,132 @@ class ListMitraTeladans extends ListRecords
             return null;
         }
 
-        // Prepare certificate data for all top 5 mitra
-        $certificates = [];
-        foreach ($topMitra as $index => $mt) {
-            $certificates[] = $service->getCertificateData(
-                $mt,
-                $index + 1,
-                $year,
-                $quarter,
-            );
+        // Create temporary directory for PDFs
+        $tempDir = storage_path("app/temp/certificates_" . time());
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
         }
 
-        // Generate PDF with all certificates
-        $pdf = Pdf::loadView("exports.mitra-teladan.certificates", [
-            "certificates" => $certificates,
-            "metadata" => $service->getReportMetadata($year, $quarter),
-        ]);
+        $pdfFiles = [];
 
-        $pdf->setPaper("A4", "landscape"); // Sertifikat menggunakan landscape
+        try {
+            // Generate individual PDF for each certificate
+            foreach ($topMitra as $index => $mt) {
+                $certificateData = $service->getCertificateData(
+                    $mt,
+                    $index + 1,
+                    $year,
+                    $quarter,
+                );
 
-        $filename = sprintf(
-            "Sertifikat_Mitra_Teladan_Q%d_%d_%s.pdf",
-            $quarter,
-            $year,
-            now()->format("Ymd_His"),
-        );
+                // Generate PDF
+                $pdf = Pdf::loadView(
+                    "exports.mitra-teladan.certificate-single",
+                    [
+                        "certificate" => $certificateData,
+                    ],
+                );
 
-        Notification::make()
-            ->success()
-            ->title("Sertifikat Berhasil Dibuat")
-            ->body(
-                "5 sertifikat Mitra Teladan Q{$quarter} {$year} dalam satu file PDF",
-            )
-            ->send();
+                $pdf->setPaper("a4", "landscape");
+                $pdf->setOption("dpi", 96);
+                $pdf->setOption("enable-local-file-access", true);
 
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf->output();
-        }, $filename);
+                // Sanitize filename
+                $sanitizedName = $this->sanitizeFilename(
+                    $certificateData["mitra_name"],
+                );
+
+                $filename = sprintf(
+                    "%d_Sertifikat_%s_Q%d_%d.pdf",
+                    $index + 1,
+                    $sanitizedName,
+                    $quarter,
+                    $year,
+                );
+
+                $filepath = $tempDir . "/" . $filename;
+                $pdf->save($filepath);
+
+                $pdfFiles[] = [
+                    "path" => $filepath,
+                    "name" => $filename,
+                ];
+            }
+
+            // Create ZIP file
+            $zipFilename = sprintf(
+                "Sertifikat_Mitra_Teladan_Q%d_%d_%s.zip",
+                $quarter,
+                $year,
+                now()->format("Ymd_His"),
+            );
+
+            $zipPath = $tempDir . "/" . $zipFilename;
+
+            $zip = new ZipArchive();
+
+            if (
+                $zip->open(
+                    $zipPath,
+                    ZipArchive::CREATE | ZipArchive::OVERWRITE,
+                ) === true
+            ) {
+                foreach ($pdfFiles as $file) {
+                    $zip->addFile($file["path"], $file["name"]);
+                }
+                $zip->close();
+
+                Notification::make()
+                    ->success()
+                    ->title("Sertifikat Berhasil Dibuat")
+                    ->body(
+                        count($pdfFiles) .
+                            " sertifikat Mitra Teladan Q{$quarter} {$year} dalam format ZIP",
+                    )
+                    ->send();
+
+                // Return ZIP file as download
+                return response()
+                    ->download($zipPath, $zipFilename)
+                    ->deleteFileAfterSend(true);
+            } else {
+                throw new \Exception("Tidak dapat membuat file ZIP");
+            }
+        } catch (\Exception $e) {
+            Notification::make()
+                ->danger()
+                ->title("Error")
+                ->body("Gagal membuat sertifikat: " . $e->getMessage())
+                ->send();
+
+            return null;
+        } finally {
+            // Cleanup: Delete temporary PDF files
+            foreach ($pdfFiles as $file) {
+                if (file_exists($file["path"])) {
+                    @unlink($file["path"]);
+                }
+            }
+
+            // Delete temporary directory
+            if (file_exists($tempDir)) {
+                @rmdir($tempDir);
+            }
+        }
+    }
+
+    /**
+     * Sanitize filename to remove special characters
+     */
+    private function sanitizeFilename(string $filename): string
+    {
+        // Remove special characters and replace spaces with underscore
+        $filename = preg_replace("/[^A-Za-z0-9\-_]/", "_", $filename);
+        // Remove multiple underscores
+        $filename = preg_replace("/_+/", "_", $filename);
+        // Trim underscores from start and end
+        $filename = trim($filename, "_");
+        // Limit length
+        return substr($filename, 0, 50);
     }
 }
