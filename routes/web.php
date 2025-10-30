@@ -34,5 +34,12 @@ Route::get('/export-nilai2-report', [SelectMitraTeladanExportController::class, 
 Route::get('/check/mitra/{uuid}', [PublicTransactionController::class, 'show'])->name('cek.mitra');
 
 Route::middleware(['auth'])->group(function () {
+    Route::post('/surveys/{survey}/export/id-cards/batch', [SurveyExportController::class, 'startBatch'])->name('survey.export.idcards.batch');
+    Route::get('/jobs/batch/{id}/status', [SurveyExportController::class, 'batchStatus'])->name('jobs.batch.status');
+
+    Route::get('/surveys/{survey}/export/id-cards/zip', [SurveyExportController::class, 'zip'])->name('survey.export.idcards.zip');
+    Route::get('/transactions/{transaction}/id-card/download', [SurveyExportController::class, 'downloadSingle'])->name('transaction.idcard.download');
+
+    // Keep existing single export route
     Route::get('/surveys/{survey}/export/id-cards', [SurveyExportController::class, 'idCards'])->name('survey.export.idcards');
 });

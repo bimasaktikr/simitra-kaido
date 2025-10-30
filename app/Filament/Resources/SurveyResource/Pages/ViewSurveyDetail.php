@@ -17,6 +17,7 @@ use Filament\Resources\Pages\Page;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables;
 use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -26,6 +27,10 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Contracts\View\View; // at top
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Bus;
+use App\Jobs\GenerateTransactionQr;
+use App\Jobs\GenerateTransactionIdCard;
+
 
 
 
@@ -56,7 +61,7 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                 WHERE n.transaction_id = transactions.id
                 LIMIT 1
             ) AS rerata')
-            ->with(['mitra', 'nilai'])
+            ->with(['mitra', 'nilai', 'qr'])
             ->where('survey_id', $this->record->id)
             // Sort by the alias we just selected:
             ->orderByDesc('rerata');
@@ -107,7 +112,15 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
 
             TextColumn::make('nilai.rerata')
                 ->label('Rerata'),
-            ];
+            TextColumn::make('id_card_download')
+                ->label('ID Card')
+                ->state(fn () => 'Download')
+                ->url(fn (Transaction $r) => route('transaction.idcard.download', $r->id) . '?force=1')
+                ->openUrlInNewTab()
+                ->extraAttributes([
+                    'class' => 'font-medium text-primary-600 hover:underline dark:text-primary-400',
+                ]),
+        ];
     }
 
     protected function getTableActions(): array

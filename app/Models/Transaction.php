@@ -13,8 +13,6 @@ class Transaction extends Model
         'survey_id',
         'target',
         'rate',
-        'uuid',
-        'qr_path',
     ];
 
     protected $hidden = ['created_at', 'updated_at'];
@@ -33,4 +31,10 @@ class Transaction extends Model
     {
         return $this->hasOne(Nilai1::class, 'transaction_id');
     }
+    
+    public function qr()
+    {
+        return $this->hasOne(TransactionQr::class);
+    }
+
 }

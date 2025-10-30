@@ -70,7 +70,6 @@
                 <td class="value">{{ $survey->masterSurvey->code ?? $survey->code ?? '—' }}</td>
             </tr>
             <tr><td class="muted">Tahun</td><td>:</td><td class="value">{{ $survey->year ?? '—' }}</td></tr>
-            <tr><td class="muted">Rate Default</td><td>:</td><td class="value">Rp {{ number_format((int)($survey->rate ?? 0), 0, ',', '.') }}</td></tr>
             <tr><td class="muted">Finalisasi Nilai</td><td>:</td>
                 <td class="value">
                     @if($survey->is_scored)
@@ -81,13 +80,6 @@
                 </td>
             </tr>
             <tr><td class="muted">Total Mitra</td><td>:</td><td class="value">{{ $survey->transactions()->count() }}</td></tr>
-            <tr><td class="muted">Total Pembayaran</td><td>:</td>
-                <td class="value">
-                    Rp {{ number_format(
-                        $survey->transactions->sum(fn($t) => (int)$t->target * (int)$t->rate), 0, ',', '.'
-                    ) }}
-                </td>
-            </tr>
         </table>
     </div>
 
@@ -105,11 +97,6 @@
             <div class="flex-item">
                 <table>
                     <tr><td class="muted">Nama</td><td>:</td><td class="value">{{ $mitra->name ?? '—' }}</td></tr>
-                    <tr><td class="muted">Sobat ID</td><td>:</td><td class="value">{{ $maskedSobatId ?? '—' }}</td></tr>
-                    <tr><td class="muted">Email</td><td>:</td><td class="value">{{ $maskedEmail ?? '—' }}</td></tr>
-                    <tr><td class="muted">Target</td><td>:</td><td class="value">{{ $transaction->target }}</td></tr>
-                    <tr><td class="muted">Rate</td><td>:</td><td class="value">Rp {{ number_format((int)$transaction->rate, 0, ',', '.') }}</td></tr>
-                    <tr><td class="muted">Total Pembayaran</td><td>:</td><td class="value">Rp {{ number_format((int)$transaction->target * (int)$transaction->rate, 0, ',', '.') }}</td></tr>
                 </table>
             </div>
         </div>
