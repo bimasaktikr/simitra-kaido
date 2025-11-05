@@ -8,6 +8,7 @@ use App\Imports\SurveyTransactionImport;
 use App\Models\Survey;
 use App\Models\Transaction;
 use App\Services\MitraService;
+use App\Services\MLRecommendationService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\FileUpload;
@@ -97,13 +98,13 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                         )
                 ),
             TextColumn::make('nilai.aspek1')
-                ->label('Kualitas Data'),
+                ->label('Aspek 1'),
 
             TextColumn::make('nilai.aspek2')
-                ->label('Ketepatan Waktu'),
+                ->label('Aspek 2'),
 
             TextColumn::make('nilai.aspek3')
-                ->label('Pemahaman Pengetahuan Kerja'),
+                ->label('Aspek 3'),
 
             TextColumn::make('nilai.rerata')
                 ->label('Rerata'),
@@ -148,12 +149,22 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                     return $data;
                 })
                 ->action(function ($record, $data) {
-                    $record->nilai->update([
-                        'aspek1' => $data['nilai']['aspek1'],
-                        'aspek2' => $data['nilai']['aspek2'],
-                        'aspek3' => $data['nilai']['aspek3'],
-                        'rerata' => $data['nilai']['rerata'],
-                    ]);
+                    // ✅ FIX: Cek apakah nilai exists, kalau tidak buat dulu
+                    if (!$record->nilai) {
+                        $record->nilai()->create([
+                            'aspek1' => $data['nilai']['aspek1'],
+                            'aspek2' => $data['nilai']['aspek2'],
+                            'aspek3' => $data['nilai']['aspek3'],
+                            'rerata' => $data['nilai']['rerata'],
+                        ]);
+                    } else {
+                        $record->nilai->update([
+                            'aspek1' => $data['nilai']['aspek1'],
+                            'aspek2' => $data['nilai']['aspek2'],
+                            'aspek3' => $data['nilai']['aspek3'],
+                            'rerata' => $data['nilai']['rerata'],
+                        ]);
+                    }
                 })
                 ->visible(fn () => !$this->record->is_scored), // disable edit if already finalized
         ];
@@ -356,6 +367,78 @@ class ViewSurveyDetail extends Page implements Tables\Contracts\HasTable
                             ->success()
                             ->send();
                     }),
+                
+                Action::make('finalize_and_retrain')
+                    ->label('Finalize & Retrain ML')
+                    ->icon('heroicon-o-rocket-launch')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Finalize Survey & Trigger ML Retraining')
+                    ->modalDescription('This will:
+1. Mark survey as finalized (status = done)
+2. Sync survey data to PostgreSQL
+3. Trigger ML model retraining via Airflow
+4. Update ML recommendations for future surveys
+
+This process takes ~45-60 seconds.')
+                    ->modalSubmitActionLabel('Finalize & Retrain')
+                    ->visible(fn () => $this->record->status !== 'done' && $this->record->is_scored)
+                    ->action(function () {
+                        try {
+                            // Update status to done
+                            $this->record->update(['status' => 'done']);
+                            
+                            $mlService = new MLRecommendationService();
+                            
+                            // Step 1: Sync data to PostgreSQL
+                            $syncResult = $mlService->syncSurveyDataToPostgres($this->record->id);
+                            
+                            if (!$syncResult['success']) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Failed to sync data')
+                                    ->body($syncResult['message'])
+                                    ->send();
+                                return;
+                            }
+                            
+                            // Step 2: Trigger ML retraining
+                            $retrainResult = $mlService->triggerRetraining($this->record->id);
+                            
+                            if ($retrainResult['success']) {
+                                // Mark as synced
+                                $this->record->update(['is_synced' => true]);
+                                
+                                // NOTE: Cache refresh moved to Airflow webhook
+                                // Airflow DAG will automatically refresh cache after completion
+                                
+                                Notification::make()
+                                    ->success()
+                                    ->title('Survey Finalized & ML Retraining Started')
+                                    ->body("✅ Synced {$syncResult['records_synced']} records to PostgreSQL
+🚀 ML retraining DAG triggered: {$retrainResult['dag_run_id']}
+⏳ Cache will auto-refresh after DAG completion (~1-2 minutes)
+
+Monitor progress at: http://localhost:8080")
+                                    ->persistent()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->warning()
+                                    ->title('Data synced but ML retrain failed')
+                                    ->body($retrainResult['message'])
+                                    ->send();
+                            }
+                            
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Error during finalization')
+                                ->body($e->getMessage())
+                                ->send();
+                        }
+                    }),
+                    
                     Action::make('Upload Penilaian Excel')
                     ->label('Upload Penilaian Excel')
                     ->icon('heroicon-o-arrow-up-tray')
