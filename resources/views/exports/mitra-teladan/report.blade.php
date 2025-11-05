@@ -57,46 +57,77 @@
         }
 
         .lampiran-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
-            margin: 30px 0 15px 0;
+            margin: 0 0 20px 0;
+            text-align: center;
+            text-transform: uppercase;
             border-bottom: 2px solid #000;
-            padding-bottom: 5px;
+            padding-bottom: 10px;
         }
 
         .mitra-info {
             margin: 15px 0;
             padding: 10px;
             background-color: #f9f9f9;
-            border-left: 4px solid #333;
+            border: 1px solid #333;
+        }
+        
+        .mitra-header h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .mitra-info-table {
+            width: 100%;
+            font-size: 11px;
+        }
+        
+        .mitra-info-table td {
+            padding: 5px;
+            border: none;
         }
 
         table.detail-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 20px 0;
         }
 
         table.detail-table th,
         table.detail-table td {
             border: 1px solid #000;
-            padding: 6px 10px;
+            padding: 10px;
         }
 
         table.detail-table th {
             background-color: #e0e0e0;
             font-weight: bold;
-            width: 70%;
+            width: 60%;
+            text-align: left;
         }
 
         table.detail-table td {
             text-align: center;
-            width: 30%;
+            width: 40%;
+            font-weight: bold;
         }
 
         .summary-row {
-            background-color: #f0f0f0;
-            font-weight: bold;
+            background-color: #d1fae5;
+        }
+        
+        .summary-row th {
+            background-color: #059669;
+            color: white;
+            text-align: center;
+        }
+        
+        .summary-row td {
+            background-color: #d1fae5;
+            font-size: 14px;
+            color: #059669;
         }
 
         .footer-note {
@@ -135,6 +166,10 @@
             padding: 5px 10px;
             background-color: #f0f0f0;
             border-left: 4px solid #333;
+        }
+
+        .individual-page {
+            min-height: 80vh;
         }
     </style>
 </head>
@@ -204,6 +239,7 @@
     @foreach($topMitra as $index => $mt)
         @php
             $detail = $mitraDetails[$mt->id];
+            $ranking = $index + 1;
         @endphp
 
         <div class="mitra-info">
@@ -235,17 +271,18 @@
         </table>
 
         @if(!$loop->last)
-            <div style="margin: 30px 0; border-bottom: 1px dashed #ccc;"></div>
+            <div class="page-break"></div>
         @endif
     @endforeach
 
-    {{-- PAGE BREAK --}}
+    {{-- PAGE BREAK sebelum lampiran 2 --}}
     <div class="page-break"></div>
 
     {{-- LAMPIRAN 2: DETAIL PENILAIAN SEMUA MITRA (nilai2-report) --}}
     <div class="lampiran-title">
-        LAMPIRAN II<br>
-        DETAIL PENILAIAN SELURUH MITRA TELADAN Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
+        Lampiran {{ count($topMitra) + 1 }}<br>
+        Detail Penilaian Seluruh Mitra Teladan<br>
+        Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
     </div>
 
     @if(isset($reportData) && count($reportData))

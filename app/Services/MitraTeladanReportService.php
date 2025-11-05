@@ -38,7 +38,7 @@ class MitraTeladanReportService
             ->where('status_phase_2', true)
             ->whereNotNull('avg_rating_2')
             ->orderByDesc('avg_rating_2')
-            ->orderByDesc('surveys_count') // Tiebreaker: lebih banyak penilai
+            ->orderByDesc('surveys_count')
             ->limit($limit)
             ->get();
     }
@@ -51,9 +51,8 @@ class MitraTeladanReportService
         $mitraTeladan = MitraTeladan::with(['mitra', 'team', 'nilai2'])
             ->findOrFail($mitraTeladanId);
 
-        // Calculate average per aspek from all nilai2 records
         $nilai2Records = Nilai2::where('mitra_teladan_id', $mitraTeladanId)
-            ->where('is_final', true) // Only count finalized assessments
+            ->where('is_final', true)
             ->get();
 
         $aspekAverages = [];
@@ -73,6 +72,50 @@ class MitraTeladanReportService
             'total_penilai' => $nilai2Records->count(),
             'fase_2_aspek' => self::FASE_2_ASPEK,
         ];
+    }
+
+    /**
+     * Get certificate data for specific mitra
+     */
+    public function getCertificateData(MitraTeladan $mitraTeladan, int $ranking, int $year, int $quarter): array
+    {
+        $quarterNames = [
+            1 => 'I (Januari - Maret)',
+            2 => 'II (April - Juni)', 
+            3 => 'III (Juli - September)',
+            4 => 'IV (Oktober - Desember)',
+        ];
+
+        $rankingText = [
+            1 => 'PERTAMA',
+            2 => 'KEDUA', 
+            3 => 'KETIGA',
+            4 => 'KEEMPAT',
+            5 => 'KELIMA',
+        ];
+
+        return [
+            'mitra_name' => $mitraTeladan->mitra->name,
+            'team_name' => $mitraTeladan->team->name,
+            'ranking' => $ranking,
+            'ranking_text' => $rankingText[$ranking] ?? $ranking,
+            'score' => number_format($mitraTeladan->avg_rating_2, 2),
+            'year' => $year,
+            'quarter' => $quarter,
+            'quarter_name' => $quarterNames[$quarter] ?? $quarter,
+            'period_text' => "Kuartal {$quarterNames[$quarter]} Tahun {$year}",
+            'certificate_number' => $this->generateCertificateNumber($mitraTeladan->id, $year, $quarter),
+            'issue_date' => now()->format('d F Y'),
+            'signatory' => $this->getSignatory(),
+        ];
+    }
+
+    /**
+     * Generate certificate number
+     */
+    private function generateCertificateNumber(int $mitraTeladanId, int $year, int $quarter): string
+    {
+        return sprintf('MT/%03d/Q%d/%d', $mitraTeladanId, $quarter, $year);
     }
 
     /**
