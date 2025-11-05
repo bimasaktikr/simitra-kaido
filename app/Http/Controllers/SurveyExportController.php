@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\GenerateSurveyIdCards;
 use App\Jobs\GenerateTransactionIdCard;
 use App\Jobs\GenerateTransactionQr;
+use App\Jobs\GenerateMultiIdCardPdf;
 use App\Models\Survey;
 use App\Models\Transaction;
 use Illuminate\Bus\Batch;
@@ -57,7 +58,7 @@ class SurveyExportController extends Controller
 
     public function zip(Survey $survey)
     {
-        $survey->load(['transactions.qr', 'transactions.mitra']);
+        $survey->load(['transactions.qr', 'transactions.mitra', 'masterSurvey']);
         $force = request()->boolean('force');
         $tmp = storage_path('app/tmp');
         @mkdir($tmp, 0775, true);
@@ -68,6 +69,7 @@ class SurveyExportController extends Controller
             abort(500, 'Cannot create ZIP');
         }
 
+        // Generate individual ID cards (1 PDF = 1 card)
         foreach ($survey->transactions as $t) {
             $qrAbs = $t->qr?->qr_path ? storage_path('app/public/' . $t->qr->qr_path) : null;
             if ($force || ! $t->qr || ! $t->qr->qr_path || !is_file($qrAbs)) {
@@ -89,10 +91,28 @@ class SurveyExportController extends Controller
             }
         }
 
+        $surveyName = $survey->masterSurvey?->name ?? $survey->name ?? $survey->code;
+        $safeSurveyName = preg_replace('/[^A-Za-z0-9_\-]+/', '_', $surveyName);
+        $multiPdfPath = $tmp . '/IDCards_All_' . $survey->code . '_' . $survey->year . '_' . time() . '.pdf';
+        try {
+            Bus::dispatchSync(new GenerateMultiIdCardPdf($survey->id, $multiPdfPath));
+            if (is_file($multiPdfPath)) {
+                $zip->addFile($multiPdfPath, "ID_{$safeSurveyName}.pdf");
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate multi-page ID card PDF: ' . $e->getMessage());
+        }
+
         $zip->close();
 
-        return response()->download($tmpZip, 'IDCards_' . $survey->code . '_' . $survey->year . '.zip')
+        $response = response()->download($tmpZip, 'IDCards_' . $survey->code . '_' . $survey->year . '.zip')
             ->deleteFileAfterSend(true);
+
+        if (isset($multiPdfPath) && is_file($multiPdfPath)) {
+            @unlink($multiPdfPath);
+        }
+
+        return $response;
     }
 
     public function idCards(Survey $survey)
