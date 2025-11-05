@@ -136,7 +136,7 @@
   }
 
   .survey {
-    font-size: 1.9mm;
+    font-size: 2.2mm;
     line-height: 1.15;
     text-transform: uppercase;
   }
