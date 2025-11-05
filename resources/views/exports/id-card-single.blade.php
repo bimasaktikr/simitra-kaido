@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>ID Card - BPS</title>
+<title>ID Card</title>
 <style>
   @page { size: 54mm 85.6mm; margin: 0; }
   
@@ -42,35 +42,35 @@
   }
 
   .logo {
-    width: 17mm;
+    width: 14mm;
     height: auto;
     display: block;
-    margin: 0 auto 0.8mm;
+    margin: 2mm auto 1mm;
   }
 
   .instansi {
-    font-size: 2.8mm;
+    font-size: 2.6mm;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.3mm;
+    letter-spacing: 0.1mm;
     margin-bottom: 1.5mm;
   }
 
   .panel-outline {
     width: 42mm;
-    border: 0.2mm solid #111;
+    border: 0.2mm solid #000000;
     border-radius: 2mm;
     padding: 2mm 0;
-    margin: 0 auto 1.5mm;
+    margin: 4mm auto 4mm;
     text-align: center;
   }
 
   .photo-frame {
-    width: 22mm;
-    height: 25mm;
-    border: 0.2mm solid #CED4DA;
+    width: 20mm;
+    height: 22mm;
+    border: 0.2mm solid #F5F7FA;
     border-radius: 1.2mm;
-    background: #F5F7FA;
+    background: #ffffffea;
     overflow: hidden;
     margin: 0 auto 1.5mm;
     text-align: center;
@@ -94,9 +94,9 @@
     margin: 0 auto 1.2mm;
     font-weight: 700;
     font-size: 2.9mm;
-    letter-spacing: 0.2mm;
+    letter-spacing: 0.1mm;
     text-transform: uppercase;
-    border-bottom: 0.2mm solid #111;
+    border-bottom: 0.2mm solid #000000;
     padding-bottom: 0.3mm;
   }
 
@@ -105,9 +105,9 @@
     margin: 0 auto 1.5mm;
     font-weight: 700;
     font-size: 2.9mm;
-    letter-spacing: 0.3mm;
+    letter-spacing: 0.1mm;
     text-transform: uppercase;
-    border-bottom: 0.2mm solid #111;
+    border-bottom: 0.2mm solid #000000;
     padding-bottom: 0.3mm;
   }
 
@@ -128,33 +128,35 @@
   }
 
   .role {
-    font-size: 2.9mm;
-    font-weight: 800;
+    font-size: 2.8mm;
+    font-weight: 700;
     text-transform: uppercase;
     text-decoration: underline;
     margin-bottom: 0.3mm;
   }
 
   .survey {
-    font-size: 2mm;
+    font-size: 1.9mm;
     line-height: 1.15;
     text-transform: uppercase;
   }
 
   .qr {
-    width: 17mm;
-    height: 17mm;
-    border: 0.35mm solid #DEE2E6;
+    width: 14mm;
+    height: 14mm;
+    border: 0.35mm solid #ffffff;
     border-radius: 1.2mm;
     text-align: center;
-    line-height: 17mm;
+    vertical-align: middle;
+    line-height: 14mm;
     float: right;
   }
 
   .qr img {
-    width: 16mm;
-    height: 16mm;
+    width: 13mm;
+    height: 13mm;
     vertical-align: middle;
+    text-align: center;
   }
 </style>
 </head>
@@ -183,7 +185,7 @@
 
     // === Survey ===
     $surveyName = $survey->masterSurvey->name ?? $survey->name ?? '';
-    $wrap = wordwrap(mb_strtoupper($surveyName), 26, "\n");
+    $wrap = wordwrap(mb_strtoupper($surveyName), 100, "\n");
   @endphp
 
   <table>
@@ -218,11 +220,11 @@
           <div class="footer-row">
             <table>
               <tr>
-                <td style="width: 60%; padding-left: 2mm;">
+                <td style="width: 60%; padding-left: 3mm;">
                   <div class="role">Petugas</div>
                   <div class="survey">{!! nl2br(e($wrap)) !!}</div>
                 </td>
-                <td style="width: 40%; padding-right: 2mm;">
+                <td style="width: 40%; padding-right: 3mm;">
                   <div class="qr">
                     <img src="{{ $qrUrl }}" alt="QR">
                   </div>
