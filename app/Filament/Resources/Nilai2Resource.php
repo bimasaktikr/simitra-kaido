@@ -13,6 +13,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Facades\Filament;
+use Filament\Tables\Contracts\HasTable as HasTableContract;
+
 
 class Nilai2Resource extends Resource
 {
@@ -216,32 +218,72 @@ class Nilai2Resource extends Resource
 
         $filters = [
             Tables\Filters\SelectFilter::make('year')
-                ->label('year')
-                ->options(fn () => \App\Models\MitraTeladan::query()->distinct()->pluck('year', 'year')->toArray())
-                ->query(function ($query, $state) {
-                    if ($state) {
-                        $query->whereHas('mitraTeladan', fn($q) => $q->where('year', $state));
+                ->label('Year')
+                ->options(fn () =>
+                    \App\Models\MitraTeladan::query()
+                        ->select('year')->distinct()->orderByDesc('year')
+                        ->pluck('year', 'year')->toArray()
+                )
+                ->query(function (Builder $query, $state) {
+                    if ($state !== null && $state !== '') {
+                        $query->whereHas('mitraTeladan', fn ($q) => $q->where('year', $state));
                     }
                 }),
+
             Tables\Filters\SelectFilter::make('quarter')
-                ->label('quarter')
-                ->options(fn () => \App\Models\MitraTeladan::query()->distinct()->pluck('quarter', 'quarter')->toArray())
-                ->query(function ($query, $state) {
-                    if ($state) {
-                        $query->whereHas('mitraTeladan', fn($q) => $q->where('quarter', $state));
+                ->label('Quarter')
+                ->options(fn () =>
+                    \App\Models\MitraTeladan::query()
+                        ->select('quarter')->distinct()->orderBy('quarter')
+                        ->pluck('quarter', 'quarter')->toArray()
+                )
+                ->query(function (Builder $query, $state) {
+                    if ($state !== null && $state !== '') {
+                        $query->whereHas('mitraTeladan', fn ($q) => $q->where('quarter', $state));
                     }
                 }),
         ];
 
         if ($isSuperAdmin) {
-            $filters[] = Tables\Filters\SelectFilter::make('user_id')
-                ->label('user')
-                ->options(function () {
-                    return \App\Models\User::whereHas('employee')->pluck('name', 'id')->toArray();
-                });
+            // $filters[] = Tables\Filters\SelectFilter::make('user_id')
+            //     ->label('User')
+            //     ->options(fn () =>
+            //         \App\Models\User::whereHas('employee')
+            //             ->orderBy('name')->pluck('name', 'id')->toArray()
+            //     )
+            //     // ->searchable()
+            //     ->query(fn (Builder $query, $state) =>
+            //         $state ? $query->where('user_id', $state) : null
+            //     );
+
             $filters[] = Tables\Filters\SelectFilter::make('mitra_teladan_id')
-                ->label('mitraTeladan')
-                ->options(fn () => \App\Models\MitraTeladan::with('mitra')->get()->pluck('mitra.name', 'id')->toArray());
+                ->label('Mitra Teladan')
+                // DEPENDENT ke year & quarter via $livewire
+                ->options(function (HasTableContract $livewire) {
+                    $year    = $livewire->getTableFilterState('year');
+                    $quarter = $livewire->getTableFilterState('quarter');
+
+                    $q = \App\Models\MitraTeladan::query()->with('mitra');
+                    if ($year)    $q->where('year', $year);
+                    if ($quarter) $q->where('quarter', $quarter);
+
+                    return $q->orderBy('id')
+                        ->get()
+                        ->mapWithKeys(fn ($mt) => [
+                            $mt->id => $mt->mitra?->name
+                                ? "{$mt->mitra->name} (Y{$mt->year} Q{$mt->quarter})"
+                                : "Mitra #{$mt->id} (Y{$mt->year} Q{$mt->quarter})",
+                        ])->toArray();
+                })
+                // ->searchable()
+                ->placeholder('Pilih Mitra (tergantung Tahun & Quarter)')
+                ->hidden(fn (HasTableContract $livewire) =>
+                    ! $livewire->getTableFilterState('year')
+                    || ! $livewire->getTableFilterState('quarter')
+                )
+                ->query(fn (Builder $query, $state) =>
+                    $state ? $query->where('mitra_teladan_id', $state) : null
+                );
         }
 
         return $table

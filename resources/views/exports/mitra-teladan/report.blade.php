@@ -7,55 +7,55 @@
         @page {
             margin: 2cm 2cm 2cm 2cm;
         }
-        
+
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12px;
             line-height: 1.6;
             color: #000;
         }
-        
+
         .page-break {
             page-break-after: always;
         }
-        
+
         h2 {
             text-align: center;
             font-size: 14px;
             margin: 20px 0;
             text-transform: uppercase;
         }
-        
+
         .intro {
             text-align: justify;
             margin: 20px 0;
         }
-        
+
         table.main-table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
         }
-        
+
         table.main-table th,
         table.main-table td {
             border: 1px solid #000;
             padding: 8px;
             text-align: left;
         }
-        
+
         table.main-table th {
             background-color: #f0f0f0;
             font-weight: bold;
             text-align: center;
         }
-        
+
         table.main-table td:first-child,
         table.main-table td:nth-child(4),
         table.main-table td:nth-child(5) {
             text-align: center;
         }
-        
+
         .lampiran-title {
             font-size: 14px;
             font-weight: bold;
@@ -65,10 +65,10 @@
             border-bottom: 2px solid #000;
             padding-bottom: 10px;
         }
-        
-        .mitra-header {
-            margin: 20px 0;
-            padding: 15px;
+
+        .mitra-info {
+            margin: 15px 0;
+            padding: 10px;
             background-color: #f9f9f9;
             border: 1px solid #333;
         }
@@ -88,32 +88,32 @@
             padding: 5px;
             border: none;
         }
-        
+
         table.detail-table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
         }
-        
+
         table.detail-table th,
         table.detail-table td {
             border: 1px solid #000;
             padding: 10px;
         }
-        
+
         table.detail-table th {
             background-color: #e0e0e0;
             font-weight: bold;
             width: 60%;
             text-align: left;
         }
-        
+
         table.detail-table td {
             text-align: center;
             width: 40%;
             font-weight: bold;
         }
-        
+
         .summary-row {
             background-color: #d1fae5;
         }
@@ -129,7 +129,7 @@
             font-size: 14px;
             color: #059669;
         }
-        
+
         .footer-note {
             margin-top: 30px;
             font-size: 10px;
@@ -144,7 +144,7 @@
             margin: 15px 0;
             font-size: 10px;
         }
-        
+
         table.nilai2-table th,
         table.nilai2-table td {
             border: 1px solid #333;
@@ -152,7 +152,7 @@
             text-align: left;
             word-break: break-word;
         }
-        
+
         table.nilai2-table th {
             background-color: #e0e0e0;
             font-weight: bold;
@@ -176,21 +176,21 @@
 <body>
     {{-- HALAMAN 1: SURAT RESMI --}}
     @include('exports.mitra-teladan.header')
-    
+
     <h2>
         Pengumuman Mitra Teladan<br>
         Kuartal {{ $metadata['quarter_name'] }} Tahun {{ $metadata['year'] }}
     </h2>
-    
+
     <div class="intro">
         <p style="text-indent: 40px;">
             Berdasarkan hasil penilaian kinerja yang telah dilakukan melalui dua fase penilaian,
-            dengan ini diumumkan <strong>Mitra Teladan</strong> periode 
-            <strong>Kuartal {{ $metadata['quarter_name'] }} Tahun {{ $metadata['year'] }}</strong> 
+            dengan ini diumumkan <strong>Mitra Teladan</strong> periode
+            <strong>Kuartal {{ $metadata['quarter_name'] }} Tahun {{ $metadata['year'] }}</strong>
             sebagai berikut:
         </p>
     </div>
-    
+
     <table class="main-table">
         <thead>
             <tr>
@@ -213,81 +213,63 @@
             @endforeach
         </tbody>
     </table>
-    
+
     <div class="intro">
         <p style="text-indent: 40px;">
             Demikian pengumuman ini dibuat untuk dapat digunakan sebagaimana mestinya.
             Detail penilaian per aspek terlampir pada halaman berikutnya.
         </p>
     </div>
-    
+
     @include('exports.mitra-teladan.footer', ['signatory' => $signatory])
-    
+
     <div class="footer-note">
         Dokumen ini dibuat secara elektronik pada {{ $metadata['generated_at'] }} pukul {{ $metadata['generated_time'] }} WIB
     </div>
-    
+
     {{-- PAGE BREAK --}}
     <div class="page-break"></div>
-    
-    {{-- LAMPIRAN 1: DETAIL TOP 5 MITRA (SATU HALAMAN PER MITRA) --}}
+
+    {{-- LAMPIRAN 1: DETAIL TOP 5 MITRA --}}
+    <div class="lampiran-title">
+        LAMPIRAN I<br>
+        DETAIL PENILAIAN TOP 5 MITRA TELADAN Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
+    </div>
+
     @foreach($topMitra as $index => $mt)
         @php
             $detail = $mitraDetails[$mt->id];
             $ranking = $index + 1;
         @endphp
-        
-        <div class="individual-page">
-            <div class="lampiran-title">
-                Lampiran {{ $ranking }}<br>
-                Detail Penilaian Mitra Teladan<br>
-                Peringkat {{ $ranking }} - Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
-            </div>
-            
-            {{-- Informasi Mitra Sederhana --}}
-            <div class="mitra-header">
-                <h3>{{ $mt->mitra->name }}</h3>
-                
-                <table class="mitra-info-table">
-                    <tr>
-                        <td style="width: 20%;"><strong>Tim:</strong></td>
-                        <td style="width: 30%;">{{ $mt->team->name }}</td>
-                        <td style="width: 20%;"><strong>Periode:</strong></td>
-                        <td style="width: 30%;">Q{{ $mt->quarter }} {{ $mt->year }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Total Penilai:</strong></td>
-                        <td>{{ $detail['total_penilai'] }} pegawai</td>
-                        <td><strong>Nilai Akhir:</strong></td>
-                        <td><strong>{{ number_format($mt->avg_rating_2, 2) }}</strong></td>
-                    </tr>
-                </table>
-            </div>
-            
-            {{-- Tabel Detail Penilaian --}}
-            <table class="detail-table">
-                <thead>
-                    <tr>
-                        <th>Aspek Penilaian (Fase 2)</th>
-                        <th>Rata-rata Nilai</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($detail['fase_2_aspek'] as $num => $aspekName)
-                    <tr>
-                        <th>{{ $num }}. {{ $aspekName }}</th>
-                        <td>{{ number_format($detail['aspek_averages'][$num] ?? 0, 2) }}</td>
-                    </tr>
-                    @endforeach
-                    <tr class="summary-row">
-                        <th>RATA-RATA KESELURUHAN</th>
-                        <td>{{ number_format($mt->avg_rating_2, 2) }}</td>
-                    </tr>
-                </tbody>
-            </table>
+
+        <div class="mitra-info">
+            <strong>{{ $index + 1 }}. {{ $mt->mitra->name }}</strong><br>
+            Tim: {{ $mt->team->name }} |
+            Periode: Q{{ $mt->quarter }} {{ $mt->year }} |
+            Total Penilai: {{ $detail['total_penilai'] }} pegawai
         </div>
-        
-        {{-- Page break kecuali untuk item terakhir --}}
+
+        <table class="detail-table">
+            <thead>
+                <tr>
+                    <th>Aspek Penilaian (Fase 2)</th>
+                    <th>Rata-rata Nilai</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($detail['fase_2_aspek'] as $num => $aspekName)
+                <tr>
+                    <td>{{ $num }}. {{ $aspekName }}</td>
+                    <td>{{ number_format($detail['aspek_averages'][$num] ?? 0, 2) }}</td>
+                </tr>
+                @endforeach
+                <tr class="summary-row">
+                    <td>RATA-RATA KESELURUHAN</td>
+                    <td>{{ number_format($mt->avg_rating_2, 2) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
         @if(!$loop->last)
             <div class="page-break"></div>
         @endif
@@ -308,11 +290,11 @@
             @if($i > 0)
                 <div class="page-break"></div>
             @endif
-            
+
             <div class="section-title">
                 {{ $group['mitraName'] }} - {{ $group['teamName'] }}
             </div>
-            
+
             <table class="nilai2-table">
                 <thead>
                     <tr>
@@ -347,12 +329,41 @@
                 </tbody>
             </table>
         @endforeach
+
+        {{-- Ranking Semua Mitra --}}
+        @if(isset($mitraRanking) && count($mitraRanking))
+            <div class="page-break"></div>
+
+            <div class="lampiran-title">
+                RANKING KESELURUHAN MITRA TELADAN<br>
+                Q{{ $metadata['quarter'] }} {{ $metadata['year'] }}
+            </div>
+
+            <table class="main-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">Peringkat</th>
+                        <th style="width: 60%;">Nama Mitra</th>
+                        <th style="width: 30%;">Rata-rata Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($mitraRanking as $row)
+                        <tr @if($row['rank'] <= 5) style="background:#d1fae5;font-weight:bold" @endif>
+                            <td style="text-align: center;">{{ $row['rank'] }}</td>
+                            <td>{{ $row['mitraName'] }}</td>
+                            <td style="text-align: center;">{{ $row['avgRerata'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
     @else
         <p style="text-align: center; margin: 30px 0; color: #666; font-style: italic;">
             Data penilaian detail tidak tersedia
         </p>
     @endif
-    
+
     <div class="footer-note" style="margin-top: 50px;">
         --- Akhir Dokumen ---
     </div>
