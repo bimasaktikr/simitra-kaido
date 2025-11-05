@@ -105,7 +105,7 @@ class SurveyExportController extends Controller
 
         $zip->close();
 
-        $response = response()->download($tmpZip, 'IDCards_' . $survey->code . '_' . $survey->year . '.zip')
+        $response = response()->download($tmpZip, 'IDCards_' . $safeSurveyName . '_' . $survey->year . '.zip')
             ->deleteFileAfterSend(true);
 
         if (isset($multiPdfPath) && is_file($multiPdfPath)) {

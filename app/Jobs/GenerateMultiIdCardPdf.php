@@ -42,7 +42,7 @@ class GenerateMultiIdCardPdf implements ShouldQueue
             $htmlPages[] = view('exports.id-card-single', [
                 'tx' => $tx,
                 'mitra' => $tx->mitra,
-                'survey' => $tx->survey,
+                'survey' => $survey,
                 'qrUrl' => $qrUrl,
                 'fotoPath' => $fotoPath,
             ])->render();
