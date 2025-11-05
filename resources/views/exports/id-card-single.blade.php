@@ -2,167 +2,159 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>ID Card</title>
+<title>ID Card - BPS</title>
 <style>
   @page { size: 54mm 85.6mm; margin: 0; }
-  html, body {
+  
+  body {
     width: 54mm;
     height: 85.6mm;
     margin: 0;
     padding: 0;
-    overflow: hidden;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Helvetica;
     color: #111;
   }
 
-  * {
-    box-sizing: border-box;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
+  * { box-sizing: border-box; }
 
-  .card {
+  table {
     width: 54mm;
     height: 85.6mm;
-    border: 0.35mm solid #E1E5EA;
-    border-radius: 3mm;
-    position: absolute;
+    border-collapse: collapse;
+    padding: 0;
+    margin: 0;
   }
 
-  /* Logo */
-  .logo {
-    position: absolute;
-    top: 3mm;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 17mm;
-    height: auto;
+  td {
+    padding: 0;
+    margin: 0;
+    vertical-align: top;
   }
 
-  /* Badan Pusat Statistik */
-  .instansi {
-    position: absolute;
-    top: 13mm;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 3mm;
-    letter-spacing: .3mm;
-    font-weight: 700;
-    text-transform: uppercase;
+  .main-container {
+    width: 48mm;
+    margin: 0 auto;
+    padding-top: 2.5mm;
+  }
+
+  .text-center {
     text-align: center;
   }
 
-  /* Bingkai foto */
+  .logo {
+    width: 17mm;
+    height: auto;
+    display: block;
+    margin: 0 auto 0.8mm;
+  }
+
+  .instansi {
+    font-size: 2.8mm;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3mm;
+    margin-bottom: 1.5mm;
+  }
+
+  .panel-outline {
+    width: 42mm;
+    border: 0.2mm solid #111;
+    border-radius: 2mm;
+    padding: 2mm 0;
+    margin: 0 auto 1.5mm;
+    text-align: center;
+  }
+
   .photo-frame {
-    position: absolute;
-    top: 19mm;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 24mm;
-    height: 28mm;
-    border: 0.35mm solid #CED4DA;
+    width: 22mm;
+    height: 25mm;
+    border: 0.2mm solid #CED4DA;
     border-radius: 1.2mm;
     background: #F5F7FA;
     overflow: hidden;
+    margin: 0 auto 1.5mm;
+    text-align: center;
+    line-height: 25mm;
   }
 
   .photo-frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: 22mm;
+    height: 25mm;
+    vertical-align: middle;
   }
 
-  /* Garis luar nama */
-  .panel-outline {
-    position: absolute;
-    top: 48mm;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 42mm;
-    height: 17mm;
-    border: 0.35mm solid #CBD3DC;
-    border-radius: 2mm;
+  .photo-frame span {
+    font-size: 2.8mm;
+    color: #9AA5B1;
+    vertical-align: middle;
   }
 
-  /* Nama */
   .name-line {
-    position: absolute;
-    top: 50mm;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 38mm;
-    text-align: center;
+    width: 36mm;
+    margin: 0 auto 1.2mm;
     font-weight: 700;
-    font-size: 3.2mm;
-    letter-spacing: .2mm;
+    font-size: 2.9mm;
+    letter-spacing: 0.2mm;
     text-transform: uppercase;
-    padding-bottom: 0.4mm;
-    border-bottom: 0.35mm solid #1f2937;
+    border-bottom: 0.2mm solid #111;
+    padding-bottom: 0.3mm;
   }
 
   .name-sub {
-    position: absolute;
-    top: 54mm;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 38mm;
-    text-align: center;
-    font-weight: 600;
-    font-size: 3mm;
-    letter-spacing: .3mm;
+    width: 36mm;
+    margin: 0 auto 1.5mm;
+    font-weight: 700;
+    font-size: 2.9mm;
+    letter-spacing: 0.3mm;
     text-transform: uppercase;
-    padding-bottom: 0.4mm;
-    border-bottom: 0.3mm solid #94a3b8;
+    border-bottom: 0.2mm solid #111;
+    padding-bottom: 0.3mm;
   }
 
-  /* PETUGAS */
+  .footer-row {
+    width: 48mm;
+    margin: 0 auto;
+  }
+
+  .footer-row table {
+    width: 100%;
+    height: auto;
+    border-collapse: collapse;
+  }
+
+  .footer-row td {
+    vertical-align: bottom;
+    padding: 0;
+  }
+
   .role {
-    position: absolute;
-    bottom: 18mm;
-    left: 5mm;
-    font-size: 3.2mm;
+    font-size: 2.9mm;
     font-weight: 800;
     text-transform: uppercase;
+    text-decoration: underline;
+    margin-bottom: 0.3mm;
   }
 
-  /* Nama survey */
   .survey {
-    position: absolute;
-    bottom: 6mm;
-    left: 5mm;
-    width: 32mm;
-    font-size: 2.7mm;
-    line-height: 1.25;
+    font-size: 2mm;
+    line-height: 1.15;
     text-transform: uppercase;
-    white-space: pre-line;
   }
 
-  /* QR Code */
   .qr {
-    position: absolute;
-    bottom: 4mm;
-    right: 4mm;
-    width: 20mm;
-    height: 20mm;
+    width: 17mm;
+    height: 17mm;
     border: 0.35mm solid #DEE2E6;
     border-radius: 1.2mm;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    text-align: center;
+    line-height: 17mm;
+    float: right;
   }
 
   .qr img {
-    width: 94%;
-    height: 94%;
-    object-fit: contain;
-  }
-
-  /* Mencegah page break */
-  body, .card {
-    page-break-before: avoid;
-    page-break-after: avoid;
-    page-break-inside: avoid;
+    width: 16mm;
+    height: 16mm;
+    vertical-align: middle;
   }
 </style>
 </head>
@@ -194,35 +186,53 @@
     $wrap = wordwrap(mb_strtoupper($surveyName), 26, "\n");
   @endphp
 
-  <div class="card">
-    @php $logo = public_path('images/bps-logo.png'); @endphp
-    @if (is_file($logo))
-      <img class="logo" src="{{ $logo }}" alt="BPS">
-    @endif
-    <div class="instansi">Badan Pusat Statistik</div>
+  <table>
+    <tr>
+      <td>
+        <div class="main-container">
+          <!-- Header -->
+          <div class="text-center">
+            @php $logo = public_path('images/bps-logo.png'); @endphp
+            @if (is_file($logo))
+              <img class="logo" src="{{ $logo }}" alt="BPS">
+            @endif
+            <div class="instansi">Badan Pusat Statistik</div>
+          </div>
 
-    <div class="photo-frame">
-      @if($absPhoto)
-        <img src="{{ $absPhoto }}" alt="Foto Mitra">
-      @else
-        <span style="font-size:3mm;color:#9aa5b1;display:flex;align-items:center;justify-content:center;height:100%;">FOTO</span>
-      @endif
-    </div>
+          <!-- Panel -->
+          <div class="panel-outline">
+            <div class="photo-frame">
+              @if($absPhoto)
+                <img src="{{ $absPhoto }}" alt="Foto Mitra">
+              @else
+                <span>FOTO</span>
+              @endif
+            </div>
+            <div class="name-line">{{ $name1 ?: '—' }}</div>
+            @if($name2)
+            <div class="name-sub">{{ $name2 }}</div>
+            @endif
+          </div>
 
-    <div class="panel-outline"></div>
-    <div class="name-line">{{ $name1 ?: '—' }}</div>
-    <div class="name-sub">{{ $name2 }}</div>
-
-    <div class="role">Petugas</div>
-    <div class="survey">{{ $wrap }}</div>
-
-    <div class="qr">
-      @if($qrUrl && is_file($qrUrl))
-        <img src="{{ $qrUrl }}" alt="QR">
-      @else
-        <span style="font-size:2.6mm;color:#6b7280;">QR</span>
-      @endif
-    </div>
-  </div>
+          <!-- Footer -->
+          <div class="footer-row">
+            <table>
+              <tr>
+                <td style="width: 60%; padding-left: 2mm;">
+                  <div class="role">Petugas</div>
+                  <div class="survey">{!! nl2br(e($wrap)) !!}</div>
+                </td>
+                <td style="width: 40%; padding-right: 2mm;">
+                  <div class="qr">
+                    <img src="{{ $qrUrl }}" alt="QR">
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
