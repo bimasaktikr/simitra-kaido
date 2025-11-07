@@ -83,19 +83,23 @@ class SyncMasterSurveyTypes extends Command
                     continue;
                 }
 
-                // Check if types match
-                if ($mysqlSurvey->type !== $pgSurvey['type']) {
+                // Check if types match (treat NULL as mismatch)
+                $pgType = $pgSurvey['type'];
+                $mysqlType = $mysqlSurvey->type;
+                
+                // Consider NULL or empty as mismatch
+                if ($mysqlType !== $pgType || empty($mysqlType) || is_null($mysqlType)) {
                     $mismatches[] = [
                         'id' => $pgSurvey['id'],
                         'code' => $pgSurvey['code'],
-                        'pg_type' => $pgSurvey['type'],
-                        'mysql_type' => $mysqlSurvey->type,
+                        'pg_type' => $pgType,
+                        'mysql_type' => $mysqlType ?? 'NULL',
                         'status' => 'mismatch'
                     ];
 
                     // Update MySQL
                     try {
-                        $mysqlSurvey->type = $pgSurvey['type'];
+                        $mysqlSurvey->type = $pgType;
                         $mysqlSurvey->save();
                         $stats['updated']++;
                     } catch (\Exception $e) {

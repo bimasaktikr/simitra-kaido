@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\MLRecommendationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Artisan;
 
 class TrainingWebhookController extends Controller
 {
@@ -40,16 +41,26 @@ class TrainingWebhookController extends Controller
                 'timestamp' => now()->toIso8601String()
             ]);
 
+            // Ensure master_surveys.type in MySQL is synced from PostgreSQL enriched table
+            try {
+                Log::info("🔄 Syncing master_surveys.type from ML Postgres (master_surveys_enriched) before refreshing cache");
+                // Call console command that already reads from master_surveys_enriched
+                Artisan::call('ml:sync-master-survey-types', ['--force' => true]);
+                Log::info("✅ Sync command executed: ml:sync-master-survey-types");
+            } catch (\Exception $e) {
+                Log::warning("⚠️ Failed to run ml:sync-master-survey-types: " . $e->getMessage());
+            }
+
             // Refresh cache untuk survey type yang di-training
             // Jika survey_type null, refresh semua
             if ($surveyType) {
                 $result = $this->mlService->refreshCache($surveyType, 9999);
-                
+
                 Log::info("✅ Cache refreshed for survey type", [
                     'survey_type' => $surveyType,
                     'count' => $result['total'] ?? 0
                 ]);
-                
+
                 return response()->json([
                     'status' => 'success',
                     'message' => "Cache refreshed for {$surveyType}",
@@ -60,12 +71,12 @@ class TrainingWebhookController extends Controller
                 // Refresh both survey types
                 $resultRT = $this->mlService->refreshCache('Rumah Tangga', 9999);
                 $resultP = $this->mlService->refreshCache('Perusahaan', 9999);
-                
+
                 Log::info("✅ Cache refreshed for all survey types", [
                     'rumah_tangga' => $resultRT['total'] ?? 0,
                     'perusahaan' => $resultP['total'] ?? 0
                 ]);
-                
+
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Cache refreshed for all survey types',
@@ -137,6 +148,16 @@ class TrainingWebhookController extends Controller
                     'status' => 'warning',
                     'message' => "Training status was: {$status}. Cache not refreshed."
                 ], 200);
+            }
+
+            // Ensure master_surveys.type in MySQL is synced from PostgreSQL enriched table
+            try {
+                Log::info("🔄 Syncing master_surveys.type from ML Postgres (master_surveys_enriched) before refreshing cache");
+                // Call console command that already reads from master_surveys_enriched
+                Artisan::call('ml:sync-master-survey-types', ['--force' => true]);
+                Log::info("✅ Sync command executed: ml:sync-master-survey-types");
+            } catch (\Exception $e) {
+                Log::warning("⚠️ Failed to run ml:sync-master-survey-types: " . $e->getMessage());
             }
 
             // Refresh cache untuk SEMUA survey types (karena DAG process semua)
