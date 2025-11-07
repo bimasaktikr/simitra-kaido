@@ -25,7 +25,7 @@ class PublicTransactionController extends Controller
 
         $qrPath = $tx->qr?->qr_path ? asset('storage/' . $tx->qr->qr_path) : null;
 
-        return view('mitra.check-transaction', [
+        return view('mitra.check-transaction.transaction', [
             'transaction'   => $tx,
             'mitra'         => $mitra,
             'survey'        => $survey,
