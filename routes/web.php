@@ -33,6 +33,8 @@ Route::get('/export-nilai2-report', [SelectMitraTeladanExportController::class, 
 
 Route::get('/check/mitra/{uuid}', [PublicTransactionController::class, 'show'])->name('cek.mitra');
 
+Route::post('/reviews', [PublicTransactionController::class, 'storeReview'])->name('review.store');
+
 Route::middleware(['auth'])->group(function () {
     Route::post('/surveys/{survey}/export/id-cards/batch', [SurveyExportController::class, 'startBatch'])->name('survey.export.idcards.batch');
     Route::get('/jobs/batch/{id}/status', [SurveyExportController::class, 'batchStatus'])->name('jobs.batch.status');
