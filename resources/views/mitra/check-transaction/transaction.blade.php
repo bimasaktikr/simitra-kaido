@@ -44,28 +44,28 @@
                             </div>
                             
                             <!-- Survey Info -->
-                            <div class="col-md-6 col-12" style="display: flex; flex-direction: column; justify-content: center; padding: 1.5rem;">
-                                <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <div class="col-md-6 col-12 survey-col" style="display: flex; flex-direction: column; justify-content: center; padding: 1.5rem;">
+                                <div class="survey-box" style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                                     <div style="text-align: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef;">
                                         <h5 style="font-weight: 600; font-size: 1.1rem; color: #2c3e50; margin: 0; line-height: 1.4;">
                                             {{ $survey->masterSurvey->name ?? $survey->name ?? 'N/A' }}
                                         </h5>
                                     </div>
                                     <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            <span style="color: #6c757d; font-weight: 500; font-size: 0.95rem;">Periode</span>
-                                            <span style="color: #2c3e50; font-weight: 600; font-size: 0.95rem;">{{ $survey->year ?? 'N/A' }}</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            <span style="color: #6c757d; font-weight: 500; font-size: 0.95rem;">Tim</span>
-                                            <span style="color: #2c3e50; font-weight: 600; font-size: 0.95rem;">{{ $survey->team->name ?? 'N/A' }}</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            <span style="color: #6c757d; font-weight: 500; font-size: 0.95rem;">Status</span>
-                                            <span style="display: inline-block; padding: 0.25rem 0.75rem; background: {{ $survey->status === 'active' ? '#28a745' : '#6c757d' }}; color: white; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">
-                                                {{ ucfirst($survey->status ?? 'N/A') }}
-                                            </span>
-                                        </div>
+                                            <div class="survey-row">
+                                                <span style="color: #6c757d; font-weight: 500; font-size: 0.95rem;">Periode</span>
+                                                <span class="survey-value" style="font-size:0.95rem;">{{ $survey->year ?? 'N/A' }}</span>
+                                            </div>
+                                            <div class="survey-row">
+                                                <span style="color: #6c757d; font-weight: 500; font-size: 0.95rem;">Tim</span>
+                                                <span class="survey-value" style="font-size:0.95rem;">{{ $survey->team->name ?? 'N/A' }}</span>
+                                            </div>
+                                            <div class="survey-row">
+                                                <span style="color: #6c757d; font-weight: 500; font-size: 0.95rem;">Status</span>
+                                                <span class="survey-value" style="display: inline-block; padding: 0.25rem 0.75rem; background: {{ $survey->status === 'active' ? '#28a745' : '#6c757d' }}; color: white; border-radius: 12px; font-size: 0.85rem;">
+                                                    {{ ucfirst($survey->status ?? 'N/A') }}
+                                                </span>
+                                            </div>
                                     </div>
                                 </div>
                             </div>

@@ -150,6 +150,17 @@
             font-size:0.75rem;
             color:#6c757d;
         }
+        /* Kurangi margin kanan-kiri untuk bagian survey pada breakpoint mobile */
+        @media (max-width: 576px) {
+            .survey-col { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+            .survey-box { padding: 0.75rem !important; }
+        }
+        /* Ratakan horizontal nilai (kolom kanan) pada tabel/box survey */
+        .survey-row {display:flex; justify-content:space-between; align-items:center;}
+        .survey-value {min-width:120px; text-align:center; display:inline-block; font-weight:600; color:#2c3e50;}
+        @media (max-width:576px) {
+            .survey-value {min-width:90px;}
+        }
     </style>
 </head>
 <!-- Header -->
