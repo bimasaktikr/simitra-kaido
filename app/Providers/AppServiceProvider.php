@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Survey;
 use App\Models\User;
 use App\Models\Transaction;
 use Filament\Support\Facades\FilamentView;

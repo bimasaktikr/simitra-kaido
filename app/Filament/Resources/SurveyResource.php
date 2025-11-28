@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\SurveyResource\Pages;
 use App\Filament\Resources\SurveyResource\RelationManagers;
 use App\Models\Survey;
+use App\Services\MLRecommendationService;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\DatePicker;
@@ -13,12 +14,17 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\ViewField;
+use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Actions\Action;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -29,6 +35,8 @@ class SurveyResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static ?string $navigationGroup = 'Surveys';
+    
+    protected static ?int $navigationSort = 2;
 
 
     public static function getPermissionPrefixes(): array
@@ -58,6 +66,19 @@ class SurveyResource extends Resource
                                     ->relationship('masterSurvey', 'name')
                                     ->getOptionLabelFromRecordUsing(fn($record) => $record->name . ' (' . $record->code . ')')
                                     ->searchable()
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        if ($state) {
+                                            // Get survey type from master_survey (untuk logging saja)
+                                            $masterSurvey = \App\Models\MasterSurvey::find($state);
+                                            
+                                            \Log::info("🎯 Create Survey - Master Survey Selected", [
+                                                'master_survey_id' => $state,
+                                                'master_survey_name' => $masterSurvey?->name,
+                                                'type' => $masterSurvey?->type
+                                            ]);
+                                        }
+                                    })
                                     ->createOptionForm([
                                         Forms\Components\TextInput::make('name')
                                             ->label('Nama Survey')
@@ -65,6 +86,14 @@ class SurveyResource extends Resource
                                         Forms\Components\TextInput::make('code')
                                             ->label('Kode Survey')
                                             ->required(),
+                                        Forms\Components\Select::make('type')
+                                            ->label('Survey Type')
+                                            ->options([
+                                                'Rumah Tangga' => 'Rumah Tangga',
+                                                'Perusahaan' => 'Perusahaan',
+                                            ])
+                                            ->required()
+                                            ->helperText('Required for ML recommendations'),
                                     ])
                                     ->required(),
                                 Select::make('team_id')
