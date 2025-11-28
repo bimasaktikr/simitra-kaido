@@ -24,9 +24,9 @@ class DatabaseSeeder extends Seeder
         //call BookSeeder
         $this->call(
             [
+                TeamSeeder::class,
                 EmployeeSeeder::class,
                 PaymentSeeder::class,
-                TeamSeeder::class,
                 // BookSeeder::class,
                 // PostSeeder::class,
                 // ContactSeeder::class,

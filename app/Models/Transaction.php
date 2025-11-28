@@ -6,18 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    //
+    protected $guarded = ['id'];
 
-    // add fillable
     protected $fillable = [
         'mitra_id',
         'survey_id',
         'target',
         'rate',
     ];
-    // add guaded
-    protected $guarded = ['id'];
-    // add hidden
+
     protected $hidden = ['created_at', 'updated_at'];
 
     public function survey()
@@ -29,8 +26,15 @@ class Transaction extends Model
     {
         return $this->belongsTo(Mitra::class, 'mitra_id');
     }
+
     public function nilai()
     {
         return $this->hasOne(Nilai1::class, 'transaction_id');
     }
+    
+    public function qr()
+    {
+        return $this->hasOne(TransactionQr::class);
+    }
+
 }

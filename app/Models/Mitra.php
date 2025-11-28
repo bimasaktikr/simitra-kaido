@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Str;
 
 class Mitra extends Model
 {
@@ -11,6 +12,7 @@ class Mitra extends Model
 
     // add fillable
     protected $fillable = [
+        'uuid',
         'sobat_id',
         'name',
         'user_id',
@@ -19,11 +21,26 @@ class Mitra extends Model
         'jenis_kelamin',
         'tanggal_lahir',
         'photo',
+        'qr_path',
     ];
     // add guaded
     protected $guarded = ['id'];
     // add hidden
     protected $hidden = ['created_at', 'updated_at'];
+    
+    /**
+     * Boot method untuk auto-generate UUID saat creating
+     */
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
+    }
 
     public function user()
     {
@@ -57,6 +74,26 @@ class Mitra extends Model
             'id',                   // local key on mitras
             'id'                    // local key on transactions
         );
+    }
+
+    /**
+     * Accessor untuk mendapatkan URL QR code
+     */
+    public function getQrUrlAttribute(): ?string
+    {
+        if (empty($this->qr_path)) {
+            return null;
+        }
+        
+        return asset('storage/' . $this->qr_path);
+    }
+
+    /**
+     * Accessor untuk mendapatkan URL halaman publik
+     */
+    public function getPublicUrlAttribute(): string
+    {
+        return url('/check/mitra/' . $this->uuid);
     }
 
 }
