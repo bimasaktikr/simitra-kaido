@@ -27,8 +27,6 @@ class DatabaseSeeder extends Seeder
                 TeamSeeder::class,
                 EmployeeSeeder::class,
                 PaymentSeeder::class,
-                SurveyEventSeeder::class,
-                MasterSurveyTypeSeeder::class,  // Auto-populate master_surveys type column
                 // BookSeeder::class,
                 // PostSeeder::class,
                 // ContactSeeder::class,

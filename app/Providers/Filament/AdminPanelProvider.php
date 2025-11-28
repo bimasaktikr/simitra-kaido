@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Login;
+use App\Filament\Pages\ProfilMitra;
 use App\Models\User;
 use App\Settings\KaidoSetting;
 use Filament\Http\Middleware\Authenticate;
@@ -37,11 +38,9 @@ use Illuminate\Support\Facades\Schema;
 class AdminPanelProvider extends PanelProvider
 {
     private ?KaidoSetting $settings = null;
-    //constructor
+    
     public function __construct()
     {
-        //this is feels bad but this is the solution that i can think for now :D
-        // Check if settings table exists first
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
                 $this->settings = app(KaidoSetting::class);
@@ -69,13 +68,13 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
+            
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
             ])
             ->navigationGroups([
-
                 NavigationGroup::make('Penilaian')
                     ->label('Penilaian')
                     ->icon('heroicon-o-pencil-square')
@@ -126,8 +125,7 @@ class AdminPanelProvider extends PanelProvider
             ->plugins(
                 $this->getPlugins()
             )
-            ->databaseNotifications()
-            ;
+            ->databaseNotifications();
     }
 
     private function getPlugins(): array
@@ -138,14 +136,13 @@ class AdminPanelProvider extends PanelProvider
             ApiServicePlugin::make(),
             BreezyCore::make()
                 ->myProfile(
-                    shouldRegisterUserMenu: true, // Sets the 'account' link in the panel User Menu (default = true)
-                    shouldRegisterNavigation: true, // Adds a main navigation item for the My Profile page (default = false)
-                    navigationGroup: 'Settings', // Sets the navigation group for the My Profile page (default = null)
-                    hasAvatars: true, // Enables the avatar upload form component (default = false)
+                    shouldRegisterUserMenu: true,
+                    shouldRegisterNavigation: true,
+                    navigationGroup: 'Settings',
+                    hasAvatars: true,
                     slug: 'my-profile'
                 )
                 ->avatarUploadComponent(fn($fileUpload) => $fileUpload->disableLabel())
-                // OR, replace with your own component
                 ->avatarUploadComponent(
                     fn() => FileUpload::make('avatar_url')
                         ->image()

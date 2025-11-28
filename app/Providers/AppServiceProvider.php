@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Models\Survey;
 use App\Models\User;
-use App\Observers\SurveyObserver;
+use App\Models\Transaction;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -18,9 +18,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
         parent::register();
-        FilamentView::registerRenderHook('panels::body.end', fn(): string => Blade::render("@vite('resources/js/app.js')"));
+
+        FilamentView::registerRenderHook(
+            'panels::body.end',
+            fn (): string => Blade::render("@vite('resources/js/app.js')")
+        );
     }
 
     /**
@@ -28,15 +31,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Register Survey Observer for auto-trigger ML retraining
-        Survey::observe(SurveyObserver::class);
-
-        Gate::define('viewApiDocs', function (User $user) {
+        
+        Gate::define('viewApiDocs', function (User $user): bool {
             return true;
         });
-        // Gate::policy()
-        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
-            $event->extendSocialite('discord', \SocialiteProviders\Google\Provider::class);
+
+        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event): void {
+            $event->extendSocialite(
+                'discord',
+                \SocialiteProviders\Google\Provider::class
+            );
         });
     }
 }
