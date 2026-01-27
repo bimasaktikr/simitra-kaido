@@ -295,10 +295,13 @@ class SelectMitraTeladan extends Page implements HasForms
             ->icon('heroicon-m-magnifying-glass');
     }
 
-    public function acceptMitra($mitraId)
+    public function acceptMitra($mitraId, $teamId)
     {
-        // Find the mitra data in groupedByTeam
-        $mitra = collect($this->groupedByTeam)->firstWhere('mitra_id', $mitraId);
+        $mitra = collect($this->groupedByTeam)
+            ->first(fn ($m) =>
+                $m['mitra_id'] == $mitraId &&
+                $m['team_id'] == $teamId
+            );
 
         if (!$mitra) {
             Notification::make()
@@ -308,26 +311,24 @@ class SelectMitraTeladan extends Page implements HasForms
             return;
         }
 
-        // Check if already exists for this team/year/quarter
-        $exists = MitraTeladan::where('mitra_id', $mitraId)
-            ->where('team_id', $mitra['team_id'])
+        // 🔒 LOCK PER TEAM + PERIOD (BENAR)
+        $teamAlreadyHasMitra = MitraTeladan::where('team_id', $teamId)
             ->where('year', $this->selectedYear)
             ->where('quarter', $this->selectedQuarter)
             ->exists();
 
-        if ($exists) {
+        if ($teamAlreadyHasMitra) {
             Notification::make()
-                ->title('Already accepted')
+                ->title('Mitra Teladan already set')
                 ->warning()
-                ->body('This mitra has already been accepted for this team, year, and quarter.')
+                ->body('Tim ini sudah memiliki Mitra Teladan untuk periode ini.')
                 ->send();
             return;
         }
 
-        // Create the record
         MitraTeladan::create([
             'mitra_id'      => $mitraId,
-            'team_id'       => $mitra['team_id'],
+            'team_id'       => $teamId,
             'year'          => $this->selectedYear,
             'quarter'       => $this->selectedQuarter,
             'avg_rating_1'  => $mitra['avg_rating'],
@@ -337,12 +338,14 @@ class SelectMitraTeladan extends Page implements HasForms
         Notification::make()
             ->title('Success')
             ->success()
-            ->body('Mitra Teladan has been accepted!')
+            ->body('Mitra Teladan has been accepted.')
             ->send();
 
-        // Optionally, refresh the data
         $this->loadTopMitras();
     }
+
+
+
 
     public function export()
     {

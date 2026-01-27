@@ -105,7 +105,7 @@
                                     canAcceptTeamIds: @json($canAcceptTeamIds)
                                     team_id: {{ $mitra['team_id'] }}
                                 </pre> --}}
-                                @if(in_array($mitra['team_id'], $canAcceptTeamIds))
+                                {{-- @if(in_array($mitra['team_id'], $canAcceptTeamIds))
                                     @if(isset($acceptedMitraIdByTeam[$mitra['team_id']]) && $acceptedMitraIdByTeam[$mitra['team_id']] == $mitra['mitra_id'])
                                         <button class="px-4 py-2 text-white bg-gray-400 rounded" disabled>Accepted</button>
                                     @elseif(!isset($acceptedMitraIdByTeam[$mitra['team_id']]))
@@ -114,6 +114,43 @@
                                             wire:click="acceptMitra('{{ $mitra['mitra_id'] }}')"
                                         >Accept</button>
                                     @endif
+                                @endif --}}
+
+                                {{-- BATAS --}}
+                                @php
+                                    $acceptedMitraId = $acceptedMitraIdByTeam[$mitra['team_id']] ?? null;
+                                @endphp
+
+                                @if(!in_array($mitra['team_id'], $canAcceptTeamIds))
+                                    <span class="text-xs text-gray-400">No access</span>
+
+                                @elseif(is_null($acceptedMitraId))
+                                    {{-- Team BELUM punya mitra --}}
+                                    <button
+                                        class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+                                        wire:click="acceptMitra('{{ $mitra['mitra_id'] }}', '{{ $mitra['team_id'] }}')"
+                                    >
+                                        Accept
+                                    </button>
+
+                                @elseif($acceptedMitraId == $mitra['mitra_id'])
+                                    {{-- Mitra ini adalah yang diterima --}}
+                                    <button
+                                        class="px-4 py-2 text-white bg-gray-400 rounded cursor-not-allowed"
+                                        disabled
+                                    >
+                                        Accepted
+                                    </button>
+
+                                @else
+                                    {{-- Team sudah punya mitra LAIN --}}
+                                    <button
+                                        class="px-4 py-2 text-white bg-gray-300 rounded cursor-not-allowed"
+                                        disabled
+                                        title="Team sudah memiliki Mitra Teladan"
+                                    >
+                                        Locked
+                                    </button>
                                 @endif
                             </td>
                         </tr>
