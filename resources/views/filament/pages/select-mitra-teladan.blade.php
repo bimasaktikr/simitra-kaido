@@ -1,4 +1,5 @@
 <x-filament-panels::page>
+
     @if(in_array(auth()->user()->getRoleNames()->first(), ['super_admin', 'Ketua SDM']))
         <div class="flex justify-end mb-4">
             <a
@@ -62,9 +63,9 @@
                         @endif
                     @endif
                     {{-- <pre>
-mitra_id: {{ $item['mitra_id'] ?? 'null' }}
-mitra_teladan_id: {{ $item['mitra_teladan_id'] ?? 'null' }}
-user_has_nilai2: {{ $item['user_has_nilai2'] ? 'true' : 'false' }}
+                        mitra_id: {{ $item['mitra_id'] ?? 'null' }}
+                        mitra_teladan_id: {{ $item['mitra_teladan_id'] ?? 'null' }}
+                        user_has_nilai2: {{ $item['user_has_nilai2'] ? 'true' : 'false' }}
                     </pre> --}}
                 </div>
             @endforeach
@@ -100,10 +101,14 @@ user_has_nilai2: {{ $item['user_has_nilai2'] ? 'true' : 'false' }}
                             <td class="px-6 py-4">{{ $mitra['surveys_count'] }}</td>
                             <td class="px-6 py-4">{{ $mitra['team_name'] ?? $mitra['team_id'] }}</td>
                             <td class="px-6 py-4">
+                                {{-- <pre class="text-xs">
+                                    canAcceptTeamIds: @json($canAcceptTeamIds)
+                                    team_id: {{ $mitra['team_id'] }}
+                                </pre> --}}
                                 @if(in_array($mitra['team_id'], $canAcceptTeamIds))
                                     @if(isset($acceptedMitraIdByTeam[$mitra['team_id']]) && $acceptedMitraIdByTeam[$mitra['team_id']] == $mitra['mitra_id'])
                                         <button class="px-4 py-2 text-white bg-gray-400 rounded" disabled>Accepted</button>
-                                    @elseif(empty($acceptedMitraIdByTeam[$mitra['team_id']]))
+                                    @elseif(!isset($acceptedMitraIdByTeam[$mitra['team_id']]))
                                         <button
                                             class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
                                             wire:click="acceptMitra('{{ $mitra['mitra_id'] }}')"

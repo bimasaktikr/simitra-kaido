@@ -78,9 +78,14 @@ class SelectMitraTeladan extends Page implements HasForms
         $user = Auth::user();
         $canAcceptTeamIds = [];
         // Replace hasRole with a check using the 'role' attribute or permissions
-        if (isset($user->role) && $user->role === 'super_admin') {
-            $canAcceptTeamIds = \App\Models\Team::where('has_survey', true)->pluck('id')->toArray();
-        } elseif (isset($user->role) && $user->role === 'ketua_tim' && $user->employee) {
+        // if (isset($user->role) && $user->role === 'super_admin') {
+        //     $canAcceptTeamIds = \App\Models\Team::where('has_survey', true)->pluck('id')->toArray();
+        // } elseif (isset($user->role) && $user->role === 'ketua_tim' && $user->employee) {
+        //     $canAcceptTeamIds = [$user->employee->team_id];
+        // }
+        if ($user->hasRole('super_admin')) {
+            $canAcceptTeamIds = Team::where('has_survey', true)->pluck('id')->toArray();
+        } elseif ($user->hasRole('ketua_tim') && $user->employee) {
             $canAcceptTeamIds = [$user->employee->team_id];
         }
         $this->canAcceptTeamIds = $canAcceptTeamIds;
